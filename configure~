@@ -654,6 +654,8 @@ CCDEPMODE
 ac_ct_CC
 CFLAGS
 CC
+DEBUG_FALSE
+DEBUG_TRUE
 OSX_FALSE
 OSX_TRUE
 WINDOWS_FALSE
@@ -760,6 +762,7 @@ ac_user_opts='
 enable_option_checking
 enable_silent_rules
 enable_dependency_tracking
+enable_debug
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1406,6 +1409,7 @@ Optional Features:
                           do not reject slow dependency extractors
   --disable-dependency-tracking
                           speeds up one-time build
+  --enable-debug          enable debugging, default: no
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -2779,7 +2783,6 @@ test -n "$target_alias" &&
   test "$program_prefix$program_suffix$program_transform_name" = \
     NONENONEs,x,x, &&
   program_prefix=${target_alias}-
-
 am__api_version='1.16'
 
 
@@ -4258,6 +4261,28 @@ else
 fi
 
 
+# Check whether --enable-debug was given.
+if test ${enable_debug+y}
+then :
+  enableval=$enable_debug; case "${enableval}" in
+             yes) debug=true ;;
+             no)  debug=false ;;
+             *)   as_fn_error $? "bad value ${enableval} for --enable-debug" "$LINENO" 5 ;;
+esac
+else $as_nop
+  debug=false
+fi
+
+
+ if test x"$debug" = x"true"; then
+  DEBUG_TRUE=
+  DEBUG_FALSE='#'
+else
+  DEBUG_TRUE='#'
+  DEBUG_FALSE=
+fi
+
+
 
 
 
@@ -5536,6 +5561,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OSX_TRUE}" && test -z "${OSX_FALSE}"; then
   as_fn_error $? "conditional \"OSX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${DEBUG_TRUE}" && test -z "${DEBUG_FALSE}"; then
+  as_fn_error $? "conditional \"DEBUG\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCC_TRUE}" && test -z "${am__fastdepCC_FALSE}"; then

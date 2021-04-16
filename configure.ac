@@ -51,6 +51,10 @@ esac],
 
 AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
+
+AC_CHECK_HEADERS([sys/param.h unistd.h])
+AC_CHECK_FUNCS([getcwd mkdir])
+
 AC_CHECK_HEADER_STDBOOL
 
 AC_CONFIG_FILES(Makefile src/Makefile)

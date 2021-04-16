@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<version>0.1</version>
+<date>2021-04-16T05:26:03</date>
+<Function>
+    <Astrometry Enable="false"/>
+    <Photometry Enable="false"/>
+    <MotionAssociation Enable="false"/>
+</Function>
+<ClockCorrect-for-CMOS PreClean="0" LinesShift="0"/>
+<PreProcess>
+    <ZERO Path=""/>
+    <DARK Path=""/>
+    <FLAT Path=""/>
+</PreProcess>

@@ -1,5 +1,5 @@
 bin_PROGRAMS=adips
-adips_SOURCES=adips.cpp
+adips_SOURCES=GLog.cpp adips.cpp
 
 if DEBUG
   AM_CFLAGS = -g3 -O0 -Wall -DNDEBUG
