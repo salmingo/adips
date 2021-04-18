@@ -7,11 +7,8 @@ AC_CONFIG_SRCDIR([src/GLog.h])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
-AC_PROG_AWK
 AC_PROG_CXX
 AC_PROG_CC
-AC_PROG_INSTALL
-AC_PROG_MKDIR_P
 
 # Checks for libraries.
 # FIXME: Replace 'main' with a function in '-lboost_chrono':
@@ -28,16 +25,14 @@ AC_CHECK_LIB([pthread], [main])
 AC_CHECK_LIB([rt], [main])
 
 # Checks for header files.
-AC_CHECK_HEADERS([sys/param.h unistd.h])
+AC_CHECK_HEADERS([strings.h sys/param.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
 
 # Checks for library functions.
-AC_CHECK_FUNCS([getcwd mkdir])
+AC_CHECK_FUNCS([bzero getcwd mkdir strstr])
 
 AC_CONFIG_FILES([Makefile
-                 release/Makefile
-                 release/src/Makefile
                  src/Makefile])
 AC_OUTPUT

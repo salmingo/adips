@@ -81,10 +81,10 @@ public:
 	 * 文件加载结果
 	 */
 	bool Load(const string &filepath) {
-		try {
-			using namespace boost::property_tree;
-			using namespace boost::property_tree::xml_parser;
+		using namespace boost::property_tree;
+		using namespace boost::property_tree::xml_parser;
 
+		try {
 			string str;
 			ptree nodes;
 
@@ -109,7 +109,7 @@ public:
 
 			return true;
 		}
-		catch(boost::property_tree::xml_parser::xml_parser_error &ex) {
+		catch(xml_parser_error &ex) {
 			Init(filepath);
 			return false;
 		}
