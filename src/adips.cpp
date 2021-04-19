@@ -13,8 +13,7 @@
 #include <boost/filesystem.hpp>
 #include "Parameter.hpp"
 #include "GLog.h"
-#include "FITSHandlerImage.hpp"
-#include "ImageFrame.hpp"
+#include "ADIWorkFlow.h"
 
 ///////////////////////////////////////////////////////////////////////
 using namespace std;
@@ -40,62 +39,39 @@ void Usage() {
 }
 
 void process_sequence(strvec& imgFiles, Parameter* param) {
-	int n;
-	if ((n = imgFiles.size()) > 2) {
-		sort(imgFiles.begin(), imgFiles.end(), [](const string &name1, const string &name2) {
-			return name1 < name2;
-		});
+	ADIWorkFlow workFlow;
+
+	if (!workFlow.Start(param)) {
+		_gLog.Write(LOG_FAULT, "failed to start process procedure");
 	}
-
-	int errcode;
-	FITSHandlerImage imgFITS;
-	ImgFrmPtr imgFrmPtr;
-	path pathFile;
-	double expdur;
-
-	for (int i = 0; i < n; ++i) {
-		pathFile = imgFiles[i];
-		// 打开FITS文件, 读取关键头信息和数据
-		errcode = imgFITS.LoadImage(imgFiles[i].c_str());
-		if (errcode) {
-			_gLog.Write(LOG_FAULT, "image file [%s]: %s",
-					imgFiles[i].c_str(),
-					errcode == 1 ? "failed to open" :
-							(errcode == 2 ? "not found necessary keywords" :
-									"failed to read image data"));
-			continue;
+	else {
+		int i, n;
+		if ((n = imgFiles.size()) > 2) {
+			sort(imgFiles.begin(), imgFiles.end(), [](const string &name1, const string &name2) {
+				return name1 < name2;
+			});
 		}
-		// 图像处理, 提取目标及目标特征
-		imgFrmPtr = make_image_frame();
-		imgFrmPtr->filename = pathFile.filename().string();
-		imgFrmPtr->dateobs = imgFITS.GetExptime(expdur);
-		imgFrmPtr->expdur = expdur;
-		//...天文定位
-		if (param->useAstrometry || param->usePhotometry || param->useMotionAss) {
-
+		for (i = 0; i < n; ++i) {
+			workFlow.ProcessImage(imgFiles[i].c_str());
 		}
-		//...测光
-		if (param->usePhotometry || param->useMotionAss) {
 
-		}
-		//...关联识别运动目标
-		if (param->useMotionAss) {
-
-		}
-		//...输出处理结果
+		workFlow.Stop();
 	}
 }
 
 void combine_images(strvec& imgFiles, Parameter* param, int combine) {
-	int n;
+	int i, n;
+
 	if ((n = imgFiles.size()) <= 3) {
 		_gLog.Write(LOG_WARN, "combine operation needs at least 4 frames image");
 	}
 	else {
-		FITSHandlerImage *imgFITSs = new FITSHandlerImage[n];
-//		int w, h;
+		ADIWorkFlow workFlow;
 
-		delete []imgFITSs;
+		workFlow.BeginCombine(param, combine);
+		for (i = 0; i < n; ++i)
+			workFlow.AddCombineImage(imgFiles[i].c_str());
+		workFlow.EndCombine();
 	}
 }
 

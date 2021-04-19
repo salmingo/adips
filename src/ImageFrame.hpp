@@ -9,6 +9,7 @@
 
 #include <string>
 #include <vector>
+#include <deque>
 #include <strings.h>
 #include <boost/smart_ptr/shared_ptr.hpp>
 
@@ -61,9 +62,6 @@ struct ImageFrame {
 	CeleBodyVec bodies;		/// 从图像中提取的天体集合
 };
 typedef boost::shared_ptr<ImageFrame> ImgFrmPtr;
-
-ImgFrmPtr make_image_frame() {
-	return ImgFrmPtr(new ImageFrame);
-}
+typedef std::deque<ImgFrmPtr> ImgFrmDeque;
 
 #endif
