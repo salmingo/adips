@@ -90,8 +90,12 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 bin_PROGRAMS = adips$(EXEEXT)
-@LINUX_TRUE@am__append_1 = -lboost_thread -lrt
-@OSX_TRUE@am__append_2 = -lboost_thread-mt
+@LINUX_TRUE@am__append_1 = -lboost_system-mt-x64 -lboost_thread-mt-x64 -lboost_date_time-mt-x64 \
+@LINUX_TRUE@               -lboost_chrono-mt-x64 -lboost_regex-mt-x64 -lboost_filesystem-mt-x64 -lrt
+
+@OSX_TRUE@am__append_2 = -lboost_system-mt -lboost_thread-mt -lboost_date_time-mt -lboost_chrono \
+@OSX_TRUE@               -lboost_regex-mt -lboost_filesystem-mt
+
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -108,8 +112,7 @@ am_adips_OBJECTS = GLog.$(OBJEXT) ADIWorkFlow.$(OBJEXT) \
 	AMotioAssociate.$(OBJEXT) adips.$(OBJEXT)
 adips_OBJECTS = $(am_adips_OBJECTS)
 am__DEPENDENCIES_1 =
-adips_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+adips_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 adips_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(adips_LDFLAGS) \
 	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
@@ -282,9 +285,7 @@ adips_SOURCES = GLog.cpp ADIWorkFlow.cpp ADIReduce.cpp AMatchCatalog.cpp \
 @DEBUG_FALSE@AM_CXXFLAGS = -O3 -Wall
 @DEBUG_TRUE@AM_CXXFLAGS = -g3 -O0 -Wall -DNDEBUG
 adips_LDFLAGS = -L/usr/local/lib
-BOOST_LIBS = -lboost_system-mt -lboost_date_time-mt -lboost_filesystem-mt -lboost_chrono -lboost_regex-mt
-adips_LDADD = ${BOOST_LIBS} -lm -lpthread -lcfitsio $(am__append_1) \
-	$(am__append_2)
+adips_LDADD = -lm -lpthread -lcfitsio $(am__append_1) $(am__append_2)
 all: all-am
 
 .SUFFIXES:
