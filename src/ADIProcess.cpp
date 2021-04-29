@@ -10,7 +10,6 @@
 
 ADIProcess::ADIProcess(Parameter* param) {
 	param_   = param;
-	imgData_ = NULL;
 	working_ = false;
 }
 
@@ -31,12 +30,11 @@ ImgFrmPtr ADIProcess::GetFrame() {
 	return frame_;
 }
 
-bool ADIProcess::DoIt(ImgFrmPtr frame, float* imgData) {
+bool ADIProcess::DoIt(ImgFrmPtr frame) {
 	if (working_) return false;
 
 	_gLog.Write("Start on %s [%s]", nameFunc_.c_str(), frame->filename.c_str());
 	frame_   = frame;
-	imgData_ = imgData;
 	working_ = true;
 	thrd_proc_.reset(new boost::thread(boost::bind(&ADIProcess::thread_process, this)));
 
@@ -45,6 +43,8 @@ bool ADIProcess::DoIt(ImgFrmPtr frame, float* imgData) {
 
 void ADIProcess::thread_process() {
 	bool rslt = do_real_process();
+	_gLog.Write(rslt ? LOG_NORMAL : LOG_FAULT, "[%s] %s: %s",
+			frame_->filename.c_str(), nameFunc_.c_str(), rslt ? "Success" : "Fail");
 	working_ = false;
 	cbRslt_(rslt);
 }

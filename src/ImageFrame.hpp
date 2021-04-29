@@ -54,9 +54,10 @@ typedef std::vector<CelestialBody> CeleBodyVec;
 
 struct ImageFrame {
 	/* 文件原始信息 */
+	std::string filepath;	/// 全路径名
 	std::string pathdir;	/// 目录名
-	std::string filetit;	/// 文件名(不含扩展名)
 	std::string filename;	/// 文件名
+	std::string filetit;	/// 文件名(不含扩展名)
 	std::string dateobs;	/// 曝光起始时间, 格式: CCYY-MM-DDThh:mm:ss.sss<sss>. UTC
 	int wimg, himg;			/// 图像像素数
 	double expdur;			/// 曝光时间, 量纲: 秒

@@ -53,9 +53,6 @@ struct Parameter {
 	int msPreClean;			/// 收到曝光指令后的芯片清空时间, 量纲: 毫秒
 	int msLinesShift;		/// 图像行转移时间, 量纲： 毫秒
 
-	// 显示图形界面
-//	bool useGUI;			/// 启用GUI界面
-
 public:
 	/*!
 	 * @brief 初始化配置参数文件
@@ -71,9 +68,9 @@ public:
 		nodes.add("date", to_iso_extended_string(second_clock::universal_time()));
 
 		ptree& node1 = nodes.add("Function", "");
-		node1.add("Astrometry.<xmlattr>.Enable",    false);
-		node1.add("Photometry.<xmlattr>.Enable",    false);
-		node1.add("Motion.<xmlattr>.Enable",        false);
+		node1.add("Astrometry.<xmlattr>.Enable",  false);
+		node1.add("Photometry.<xmlattr>.Enable",  false);
+		node1.add("Motion.<xmlattr>.Enable",      false);
 
 		ptree& node2 = nodes.add("PreProcess", "");
 		node2.add("Work.<xmlattr>.Dir",  "");
@@ -81,12 +78,18 @@ public:
 		node2.add("DARK.<xmlattr>.Path", "");
 		node2.add("FLAT.<xmlattr>.Path", "");
 
-		ptree& node3 = nodes.add("BackGround", "");
-		node3.add("Global.<xmlattr>.Enable", false);
-		node3.add("Grid.<xmlattr>.Horizontal", 64);
-		node3.add("Grid.<xmlattr>.Vertical", 64);
+		ptree& node3 = nodes.add("BackGround",   "");
+		node3.add("Global.<xmlattr>.Enable",     false);
+		node3.add("Grid.<xmlattr>.Horizontal",   64);
+		node3.add("Grid.<xmlattr>.Vertical",     64);
 		node3.add("Filter.<xmlattr>.Horizontal", 3);
-		node3.add("Filter.<xmlattr>.Vertical", 3);
+		node3.add("Filter.<xmlattr>.Vertical",   3);
+
+		ptree& node4 = nodes.add("ResolveSignal",    "");
+		node4.add("RemoveBadPixel.<xmlattr>.Enable", false);
+		node4.add("Filter.<xmlattr>.Enable",         false);
+		node4.add("Filter.<xmlattr>.FilePath",       "/usr/local/etc/adips/default.conv");
+		node4.add("SNR.<xmlattr>.Minimum",           1.5);
 
 		ptree& node5 = nodes.add("BlobMesurement", "");
 		node5.add("PixelNumber.<xmlattr>.Minimum", 1);
@@ -134,6 +137,12 @@ public:
 					backGridVer    = child.second.get("Grid.<xmlattr>.Vertical",     32);
 					backFilterHor  = child.second.get("Filter.<xmlattr>.Horizontal", 3);
 					backFilterVer  = child.second.get("Filter.<xmlattr>.Vertical",   3);
+				}
+				else if (boost::iequals(child.first, "ResolveSignal")) {
+					sigRemoveBadpix = child.second.get("RemoveBadPixel.<xmlattr>.Enable", false);
+					sigUseFilter    = child.second.get("Filter.<xmlattr>.Enable",         false);
+					sigPathFilter   = child.second.get("Filter.<xmlattr>.FilePath",       "");
+					sigSNR          = child.second.get("SNR.<xmlattr>.Minimum",           1.5);
 				}
 				else if (boost::iequals(child.first, "BlobMesurement")) {
 					blobPixMin = child.second.get("PixelNumber.<xmlattr>.Minimum",  1);

@@ -12,10 +12,12 @@
 using namespace boost::filesystem;
 using namespace boost::placeholders;
 
-ADIWorkFlow::ADIWorkFlow() {
-	param_   = NULL;
-	combine_ = 0;
-	running_ = false;
+ADIWorkFlow::ADIWorkFlow(boost::asio::io_service* ios)
+	: ios_(ios) {
+	param_     = NULL;
+	combine_   = 0;
+	running_   = false;
+	procCount_ = 0;
 }
 
 ADIWorkFlow::~ADIWorkFlow() {
@@ -50,7 +52,10 @@ bool ADIWorkFlow::Start(Parameter* param) {
 		thrd_motion_.reset(new boost::thread(boost::bind(&ADIWorkFlow::thread_motion, this)));
 	}
 
-	running_ = true;
+	running_   = true;
+	procCount_ = 0;
+	// 休眠一段时间, 等待多线程完成准备
+	boost::this_thread::sleep_for(boost::chrono::milliseconds(200));
 	return true;
 }
 
@@ -88,7 +93,8 @@ void ADIWorkFlow::ProcessImage(const char* filePath) {
 
 	// 解析路径
 	path pathFull = filePath;
-	frame->pathdir = pathFull.parent_path().string();
+	frame->filepath = filePath;
+	frame->pathdir  = pathFull.parent_path().string();
 	frame->filename = pathFull.filename().string();
 	frame->filetit  = pathFull.stem().string();
 
@@ -100,67 +106,58 @@ void ADIWorkFlow::ProcessImage(const char* filePath) {
 
 /* 回调函数接口 */
 void ADIWorkFlow::DIReduceResult(bool rslt) {
-	_gLog.Write("ADIWorkFlow::DIReduceResult(): %s", rslt ? "Success" : "Fail");
-	if (rslt) {// 处理成功
-		//...在日志中记录处理结果
-
-		// 触发后续处理
-		if (param_->useAstrometry || param_->usePhotometry || param_->useMotion) {
-			mutex_lock lck(mtx_frm_astro_);
-			dequeAstro_.push_back(reduce_->GetFrame());
-			cv_astro_.notify_one();
-		}
+	--procCount_;
+	if (rslt && (param_->useAstrometry || param_->usePhotometry || param_->useMotion)) {// 处理成功
+		mutex_lock lck(mtx_frm_astro_);
+		dequeAstro_.push_back(reduce_->GetFrame());
+		cv_astro_.notify_one();
 	}
-	else {//...日志记录处理结果
-
+	if (dequeReduce_.size()) {// 尝试处理缓存区中其它图像
+		cv_reduce_.notify_one();
 	}
-	// 尝试处理缓存区中其它图像
-	cv_reduce_.notify_one();
+	else if (!thrd_astro_.unique() && ios_) {// 完成处理流程, 退出程序
+		ios_->stop();
+	}
 }
 
 void ADIWorkFlow::AstrometryResult(bool rslt) {
-	_gLog.Write("ADIWorkFlow::AstrometryResult(): %s", rslt ? "Success" : "Fail");
-	if (rslt) {// 处理成功
-		//...在日志中记录处理结果
-
-		// 触发后续处理
-		if (param_->usePhotometry || param_->useMotion) {
-			mutex_lock lck(mtx_frm_photo_);
-			dequePhoto_.push_back(astrometry_->GetFrame());
-			cv_photo_.notify_one();
-		}
+	--procCount_;
+	if (rslt && (param_->usePhotometry || param_->useMotion)) {// 处理成功
+		mutex_lock lck(mtx_frm_photo_);
+		dequePhoto_.push_back(astrometry_->GetFrame());
+		cv_photo_.notify_one();
 	}
-	else {//...日志记录处理结果
-
+	if (dequeAstro_.size()) {// 尝试处理缓存区中其它图像
+		cv_astro_.notify_one();
 	}
-	// 尝试处理缓存区中其它图像
-	cv_astro_.notify_one();
+	else if (!thrd_photo_.unique() && ios_) {// 完成处理流程, 退出程序
+		ios_->stop();
+	}
 }
 
 void ADIWorkFlow::PhotometryResult(bool rslt) {
-	_gLog.Write("ADIWorkFlow::PhotometryResult(): %s", rslt ? "Success" : "Fail");
-	if (rslt) {// 处理成功
-		//...在日志中记录处理结果
-
-		// 触发后续处理
-		if (param_->useMotion) {
-			mutex_lock lck(mtx_frm_motion_);
-			dequeMotion_.push_back(photometry_->GetFrame());
-			cv_motion_.notify_one();
-		}
+	--procCount_;
+	if (rslt && param_->useMotion) {// 处理成功
+		mutex_lock lck(mtx_frm_motion_);
+		dequeMotion_.push_back(photometry_->GetFrame());
+		cv_motion_.notify_one();
 	}
-	else {//...日志记录处理结果
-
+	if (dequePhoto_.size()) {// 尝试处理缓存区中其它图像
+		cv_photo_.notify_one();
 	}
-	// 尝试处理缓存区中其它图像
-	cv_photo_.notify_one();
+	else if (!thrd_motion_.unique() && ios_) {// 完成处理流程, 退出程序
+		ios_->stop();
+	}
 }
 
 void ADIWorkFlow::MotionResult(bool rslt) {
-	//...在日志中记录处理结果
-
-	// 尝试处理缓存区中其它图像
-	cv_motion_.notify_one();
+	--procCount_;
+	if (dequeMotion_.size()) {// 尝试处理缓存区中其它图像
+		cv_motion_.notify_one();
+	}
+	else if (ios_) {// 完成处理流程, 退出程序
+		ios_->stop();
+	}
 }
 
 /* 线程接口 */
@@ -176,6 +173,7 @@ void ADIWorkFlow::thread_reduce() {
 			ImgFrmPtr frame;
 			frame = dequeReduce_.front();
 			dequeReduce_.pop_front();
+			++procCount_;
 			reduce_->DoIt(frame);
 		}
 	}
@@ -193,6 +191,7 @@ void ADIWorkFlow::thread_astro() {
 			ImgFrmPtr frame;
 			frame = dequeAstro_.front();
 			dequeAstro_.pop_front();
+			++procCount_;
 			astrometry_->DoIt(frame);
 		}
 	}
@@ -210,6 +209,7 @@ void ADIWorkFlow::thread_photo() {
 			ImgFrmPtr frame;
 			frame = dequePhoto_.front();
 			dequePhoto_.pop_front();
+			++procCount_;
 			photometry_->DoIt(frame);
 		}
 	}
@@ -227,6 +227,7 @@ void ADIWorkFlow::thread_motion() {
 			ImgFrmPtr frame;
 			frame = dequeMotion_.front();
 			dequeMotion_.pop_front();
+			++procCount_;
 			motion_->DoIt(frame);
 		}
 	}

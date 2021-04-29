@@ -40,7 +40,6 @@ void Usage() {
 }
 
 void process_sequence(strvec& imgFiles, Parameter* param) {
-	ADIWorkFlow workFlow;
 	boost::asio::io_service ios;
 	boost::asio::signal_set signals(ios, SIGINT, SIGTERM);  // interrupt signal
 	printf ("*************************************\n");
@@ -51,6 +50,7 @@ void process_sequence(strvec& imgFiles, Parameter* param) {
 
 	signals.async_wait(boost::bind(&boost::asio::io_service::stop, &ios));
 
+	ADIWorkFlow workFlow(&ios);
 	if (!workFlow.Start(param)) {
 		_gLog.Write(LOG_FAULT, "failed to start process procedure");
 	}

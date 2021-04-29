@@ -30,7 +30,6 @@ protected:
 	string nameFunc_;		/// 功能名称
 	CBResult cbRslt_;		/// 回调函数
 	ImgFrmPtr frame_;		/// 图像帧
-	float* imgData_;		/// 图像数据地址
 
 public:
 	/*!
@@ -55,7 +54,7 @@ public:
 	 * @param frame    图像帧
 	 * @param imgData  图像数据存储地址
 	 */
-	bool DoIt(ImgFrmPtr frame, float* imgData = NULL);
+	bool DoIt(ImgFrmPtr frame);
 
 protected:
 	/*!

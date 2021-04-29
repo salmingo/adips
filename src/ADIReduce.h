@@ -8,11 +8,16 @@
 #define ADIREDUCE_H_
 
 #include "ADIProcess.h"
+#include "FITSHandlerImage.hpp"
 
 class ADIReduce : public ADIProcess {
 public:
 	ADIReduce(Parameter* param);
 	virtual ~ADIReduce();
+
+protected:
+	int maxThread_;		/// 线程并发数. 硬件数量的一半
+	FITSHandlerImage hFITS_;	/// FITS图像文件访问接口
 
 protected:
 	/*!

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <version>0.1</version>
-<date>2021-04-29T04:45:13</date>
+<date>2021-04-29T14:50:07</date>
 <Function>
     <Astrometry Enable="true"/>
     <Photometry Enable="true"/>
@@ -17,6 +17,11 @@
     <Grid Horizontal="64" Vertical="64"/>
     <Filter Horizontal="3" Vertical="3"/>
 </BackGround>
+<ResolveSignal>
+    <RemoveBadPixel Enable="false"/>
+    <Filter Enable="false" FilePath="/usr/local/etc/adips/default.conv"/>
+    <SNR Minimum="1.5"/>
+</ResolveSignal>
 <BlobMesurement>
     <PixelNumber Minimum="1" Maximum="4"/>
 </BlobMesurement>

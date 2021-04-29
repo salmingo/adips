@@ -15,12 +15,12 @@
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
+#include <boost/asio/io_service.hpp>
 #include <string>
 #include <vector>
 
 #include "Parameter.hpp"
 #include "ImageFrame.hpp"
-#include "FITSHandlerImage.hpp"
 #include "ADIReduce.h"
 #include "AAstrometry.h"
 #include "APhotometry.h"
@@ -34,7 +34,7 @@ enum {
 
 class ADIWorkFlow {
 public:
-	ADIWorkFlow();
+	ADIWorkFlow(boost::asio::io_service* ios = NULL);
 	virtual ~ADIWorkFlow();
 
 protected:
@@ -44,7 +44,9 @@ protected:
 
 protected:
 	Parameter* param_;	/// 配置参数
+	boost::asio::io_service* ios_;	/// 输入输出接口
 	bool running_;		/// 运行标志
+	int procCount_;		/// 处理过程计数
 
 	/* 数据处理接口 */
 	boost::shared_ptr<ADIReduce>   reduce_;
@@ -55,8 +57,6 @@ protected:
 	/* 图像合并 */
 	int combine_;	/// 合并模式
 	strvec vecCombine_;	/// 参与合并的图像文件路径
-	/* 数据处理接口 */
-	FITSHandlerImage hFIT_;		/// FITS图像访问接口
 	/* 以参与处理流程的数据队列 */
 	ImgFrmDeque dequeReduce_;	/// 图像处理队列
 	ImgFrmDeque dequeAstro_;	/// 天文定位队列
