@@ -1,14 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <version>0.1</version>
-<date>2021-04-16T05:26:03</date>
+<date>2021-04-29T04:45:13</date>
 <Function>
-    <Astrometry Enable="false"/>
-    <Photometry Enable="false"/>
-    <MotionAssociation Enable="false"/>
+    <Astrometry Enable="true"/>
+    <Photometry Enable="true"/>
+    <Motion Enable="true"/>
 </Function>
-<ClockCorrect-for-CMOS PreClean="0" LinesShift="0"/>
 <PreProcess>
+    <Work Dir=""/>
     <ZERO Path=""/>
     <DARK Path=""/>
     <FLAT Path=""/>
 </PreProcess>
+<BackGround>
+    <Global Enable="false"/>
+    <Grid Horizontal="64" Vertical="64"/>
+    <Filter Horizontal="3" Vertical="3"/>
+</BackGround>
+<BlobMesurement>
+    <PixelNumber Minimum="1" Maximum="4"/>
+</BlobMesurement>
+<ClockCorrect-for-CMOS Enable="false" PreClean="0" LinesShift="0"/>

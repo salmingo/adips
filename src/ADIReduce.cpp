@@ -4,16 +4,19 @@
  * @date 2021-04
  */
 
+
 #include "ADIReduce.h"
 
-ADIReduce::ADIReduce() {
-	working_ = false;
+ADIReduce::ADIReduce(Parameter* param)
+	: ADIProcess(param) {
+	nameFunc_ = "reducing";
 }
 
 ADIReduce::~ADIReduce() {
 
 }
 
-bool ADIReduce::IsWorking() {
-	return working_;
+bool ADIReduce::do_real_process() {
+
+	return true;
 }

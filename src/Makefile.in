@@ -107,9 +107,10 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_adips_OBJECTS = GLog.$(OBJEXT) ADIWorkFlow.$(OBJEXT) \
-	ADIReduce.$(OBJEXT) AMatchCatalog.$(OBJEXT) \
-	AMotioAssociate.$(OBJEXT) adips.$(OBJEXT)
+am_adips_OBJECTS = GLog.$(OBJEXT) ADIProcess.$(OBJEXT) \
+	ADIReduce.$(OBJEXT) AAstrometry.$(OBJEXT) \
+	APhotometry.$(OBJEXT) AFindPV.$(OBJEXT) ADIWorkFlow.$(OBJEXT) \
+	adips.$(OBJEXT)
 adips_OBJECTS = $(am_adips_OBJECTS)
 am__DEPENDENCIES_1 =
 adips_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
@@ -130,9 +131,10 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/ADIReduce.Po \
-	./$(DEPDIR)/ADIWorkFlow.Po ./$(DEPDIR)/AMatchCatalog.Po \
-	./$(DEPDIR)/AMotioAssociate.Po ./$(DEPDIR)/GLog.Po \
+am__depfiles_remade = ./$(DEPDIR)/AAstrometry.Po \
+	./$(DEPDIR)/ADIProcess.Po ./$(DEPDIR)/ADIReduce.Po \
+	./$(DEPDIR)/ADIWorkFlow.Po ./$(DEPDIR)/AFindPV.Po \
+	./$(DEPDIR)/APhotometry.Po ./$(DEPDIR)/GLog.Po \
 	./$(DEPDIR)/adips.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -277,15 +279,15 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-adips_SOURCES = GLog.cpp ADIWorkFlow.cpp ADIReduce.cpp AMatchCatalog.cpp \
-              AFluxCalibrate AMotioAssociate.cpp adips.cpp
+adips_SOURCES = GLog.cpp ADIProcess.cpp ADIReduce.cpp AAstrometry.cpp \
+              APhotometry.cpp AFindPV.cpp ADIWorkFlow.cpp adips.cpp
 
 @DEBUG_FALSE@AM_CFLAGS = -O3 -Wall
 @DEBUG_TRUE@AM_CFLAGS = -g3 -O0 -Wall -DNDEBUG
 @DEBUG_FALSE@AM_CXXFLAGS = -O3 -Wall
 @DEBUG_TRUE@AM_CXXFLAGS = -g3 -O0 -Wall -DNDEBUG
 adips_LDFLAGS = -L/usr/local/lib
-adips_LDADD = -lm -lpthread -lcfitsio $(am__append_1) $(am__append_2)
+adips_LDADD = -lm -lcfitsio $(am__append_1) $(am__append_2)
 all: all-am
 
 .SUFFIXES:
@@ -372,10 +374,12 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/AAstrometry.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ADIProcess.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ADIReduce.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ADIWorkFlow.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/AMatchCatalog.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/AMotioAssociate.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/AFindPV.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/APhotometry.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/GLog.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/adips.Po@am__quote@ # am--include-marker
 
@@ -526,10 +530,12 @@ clean: clean-am
 clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/ADIReduce.Po
+		-rm -f ./$(DEPDIR)/AAstrometry.Po
+	-rm -f ./$(DEPDIR)/ADIProcess.Po
+	-rm -f ./$(DEPDIR)/ADIReduce.Po
 	-rm -f ./$(DEPDIR)/ADIWorkFlow.Po
-	-rm -f ./$(DEPDIR)/AMatchCatalog.Po
-	-rm -f ./$(DEPDIR)/AMotioAssociate.Po
+	-rm -f ./$(DEPDIR)/AFindPV.Po
+	-rm -f ./$(DEPDIR)/APhotometry.Po
 	-rm -f ./$(DEPDIR)/GLog.Po
 	-rm -f ./$(DEPDIR)/adips.Po
 	-rm -f Makefile
@@ -577,10 +583,12 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/ADIReduce.Po
+		-rm -f ./$(DEPDIR)/AAstrometry.Po
+	-rm -f ./$(DEPDIR)/ADIProcess.Po
+	-rm -f ./$(DEPDIR)/ADIReduce.Po
 	-rm -f ./$(DEPDIR)/ADIWorkFlow.Po
-	-rm -f ./$(DEPDIR)/AMatchCatalog.Po
-	-rm -f ./$(DEPDIR)/AMotioAssociate.Po
+	-rm -f ./$(DEPDIR)/AFindPV.Po
+	-rm -f ./$(DEPDIR)/APhotometry.Po
 	-rm -f ./$(DEPDIR)/GLog.Po
 	-rm -f ./$(DEPDIR)/adips.Po
 	-rm -f Makefile

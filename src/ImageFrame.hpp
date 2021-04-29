@@ -53,12 +53,19 @@ public:
 typedef std::vector<CelestialBody> CeleBodyVec;
 
 struct ImageFrame {
+	/* 文件原始信息 */
+	std::string pathdir;	/// 目录名
+	std::string filetit;	/// 文件名(不含扩展名)
 	std::string filename;	/// 文件名
 	std::string dateobs;	/// 曝光起始时间, 格式: CCYY-MM-DDThh:mm:ss.sss<sss>. UTC
+	int wimg, himg;			/// 图像像素数
 	double expdur;			/// 曝光时间, 量纲: 秒
+	/* 目标提取结果 */
 	double fwhm;			/// 统计半高全宽
+	/* 天文定位结果 */
 	point_2f coordCenter;	/// 视场中心赤道坐标, 量纲: 角度, 坐标系: J2000
 	//...WCS信息
+	/* 天文测光结果 */
 	CeleBodyVec bodies;		/// 从图像中提取的天体集合
 };
 typedef boost::shared_ptr<ImageFrame> ImgFrmPtr;

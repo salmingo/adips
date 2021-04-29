@@ -11,6 +11,7 @@
 #include <vector>
 #include <algorithm>
 #include <boost/filesystem.hpp>
+#include <boost/asio.hpp>
 #include "Parameter.hpp"
 #include "GLog.h"
 #include "ADIWorkFlow.h"
@@ -40,6 +41,15 @@ void Usage() {
 
 void process_sequence(strvec& imgFiles, Parameter* param) {
 	ADIWorkFlow workFlow;
+	boost::asio::io_service ios;
+	boost::asio::signal_set signals(ios, SIGINT, SIGTERM);  // interrupt signal
+	printf ("*************************************\n");
+	printf ("*                                   *\n");
+	printf ("* press Ctrl+C to terminate program *\n");
+	printf ("*                                   *\n");
+	printf ("*************************************\n");
+
+	signals.async_wait(boost::bind(&boost::asio::io_service::stop, &ios));
 
 	if (!workFlow.Start(param)) {
 		_gLog.Write(LOG_FAULT, "failed to start process procedure");
@@ -54,7 +64,7 @@ void process_sequence(strvec& imgFiles, Parameter* param) {
 		for (i = 0; i < n; ++i) {
 			workFlow.ProcessImage(imgFiles[i].c_str());
 		}
-
+		ios.run();
 		workFlow.Stop();
 	}
 }
@@ -106,6 +116,7 @@ int main(int argc, char** argv) {
 	char optstr[] = "hdc:ZDF";
 	int ch, optndx;
 	int combine(0);
+	bool loadParam(false);
 	Parameter param;
 
 	while ((ch = getopt_long(argc, argv, optstr, longopts, &optndx)) != -1) {
@@ -122,6 +133,7 @@ int main(int argc, char** argv) {
 				_gLog.Write(LOG_FAULT, "failed to load configuration file [%s]", argv[optind - 1]);
 				return -3;
 			}
+			loadParam = true;
 			break;
 		case 'Z':
 			combine = 1;
@@ -142,6 +154,13 @@ int main(int argc, char** argv) {
 	if (!argc) {
 		_gLog.Write(LOG_WARN, "require FITS file(s) which to be processed");
 		return -4;
+	}
+	if (!loadParam) {
+		if (!param.Load("adips.xml") && !param.Load("/usr/local/etc/adips.xml")) {
+			_gLog.Write(LOG_FAULT, "failed to load configuration file [%s] and [%s]",
+					"adips.xml", "/usr/local/etc/adips.xml");
+			return -5;
+		}
 	}
 
 	/////////////////////////////////////////////////////////////////////////

@@ -20,7 +20,7 @@ struct Parameter {
 	/* 启用功能 */
 	bool useAstrometry;		/// 天文定位
 	bool usePhotometry;		/// 测光
-	bool useMotionAss;		/// 运动关联
+	bool useMotion;			/// 运动关联
 
 	/* 图像处理 */
 	// 预处理
@@ -71,9 +71,9 @@ public:
 		nodes.add("date", to_iso_extended_string(second_clock::universal_time()));
 
 		ptree& node1 = nodes.add("Function", "");
-		node1.add("Astrometry.<xmlattr>.Enable",        false);
-		node1.add("Photometry.<xmlattr>.Enable",        false);
-		node1.add("MotionAssociation.<xmlattr>.Enable", false);
+		node1.add("Astrometry.<xmlattr>.Enable",    false);
+		node1.add("Photometry.<xmlattr>.Enable",    false);
+		node1.add("Motion.<xmlattr>.Enable",        false);
 
 		ptree& node2 = nodes.add("PreProcess", "");
 		node2.add("Work.<xmlattr>.Dir",  "");
@@ -118,9 +118,9 @@ public:
 			read_xml(filepath, nodes, trim_whitespace);
 			BOOST_FOREACH(ptree::value_type const &child, nodes.get_child("")) {
 				if (boost::iequals(child.first, "Function")) {
-					useAstrometry = child.second.get("Astrometry.<xmlattr>.Enable",        false);
-					usePhotometry = child.second.get("Photometry.<xmlattr>.Enable",        false);
-					useMotionAss  = child.second.get("MotionAssociation.<xmlattr>.Enable", false);
+					useAstrometry = child.second.get("Astrometry.<xmlattr>.Enable",  false);
+					usePhotometry = child.second.get("Photometry.<xmlattr>.Enable",  false);
+					useMotion     = child.second.get("Motion.<xmlattr>.Enable",      false);
 				}
 				else if (boost::iequals(child.first, "PreProcess")) {
 					pathWork = child.second.get("Work.<xmlattr>.Dir",  "");

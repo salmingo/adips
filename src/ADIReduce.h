@@ -7,24 +7,18 @@
 #ifndef ADIREDUCE_H_
 #define ADIREDUCE_H_
 
-#include "ImageFrame.hpp"
+#include "ADIProcess.h"
 
-class ADIReduce {
+class ADIReduce : public ADIProcess {
 public:
-	ADIReduce();
+	ADIReduce(Parameter* param);
 	virtual ~ADIReduce();
 
 protected:
-	bool working_;		/// 工作标志
-	ImgFrmPtr frame_;	/// 待处理图像数据接口
-
-public:
 	/*!
-	 * @brief 检测是否仍在执行处理流程处理流程
-	 * @return
-	 * 执行标志
+	 * @brief 在多进程模式下执行真正的处理流程
 	 */
-	bool IsWorking();
+	bool do_real_process();
 };
 
 #endif /* ADIREDUCE_H_ */
