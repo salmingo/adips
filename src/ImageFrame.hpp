@@ -53,6 +53,9 @@ public:
 typedef std::vector<CelestialBody> CeleBodyVec;
 
 struct ImageFrame {
+	/* 处理流程成功标志, 控制输出项 */
+	bool succAstro;			/// 成功: 天文定位
+	bool succPhoto;			/// 成功: 测光
 	/* 文件原始信息 */
 	std::string filepath;	/// 全路径名
 	std::string pathdir;	/// 目录名

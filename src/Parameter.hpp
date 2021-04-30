@@ -31,6 +31,7 @@ struct Parameter {
 
 	// 背景算法
 	bool backGlobal;		/// 使用全局背景
+	bool backFixed;			/// 背景滤波算法. true: Fixed; false: Wavelets
 	int backGridHor;		/// 背景网格宽度
 	int backGridVer;		/// 背景网格高度
 	int backFilterHor;		/// 背景X方向滤波宽度
@@ -80,6 +81,7 @@ public:
 
 		ptree& node3 = nodes.add("BackGround",   "");
 		node3.add("Global.<xmlattr>.Enable",     false);
+		node3.add("Algorithm.<xmlattr>.Fixed",   true);
 		node3.add("Grid.<xmlattr>.Horizontal",   64);
 		node3.add("Grid.<xmlattr>.Vertical",     64);
 		node3.add("Filter.<xmlattr>.Horizontal", 3);
@@ -133,6 +135,7 @@ public:
 				}
 				else if (boost::iequals(child.first, "BackGround")) {
 					backGlobal     = child.second.get("Global.<xmlattr>.Enable",     false);
+					backFixed      = child.second.get("Algorithm.<xmlattr>.Fixed",   true);
 					backGridHor    = child.second.get("Grid.<xmlattr>.Horizontal",   32);
 					backGridVer    = child.second.get("Grid.<xmlattr>.Vertical",     32);
 					backFilterHor  = child.second.get("Filter.<xmlattr>.Horizontal", 3);
@@ -151,7 +154,6 @@ public:
 					if (blobPixMin <= 0) blobPixMin = 1;
 					if (blobPixMax <= 0) blobPixMax = 0;
 				}
-
 				else if (boost::iequals(child.first, "Clock-Correct-For-CMOS")) {
 					clockCorrect = child.second.get("<xmlattr>.Enable",     false);
 					msPreClean   = child.second.get("<xmlattr>.PreClean",   0);

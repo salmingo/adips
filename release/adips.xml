@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <version>0.1</version>
-<date>2021-04-29T14:50:07</date>
+<date>2021-04-29T23:46:06</date>
 <Function>
-    <Astrometry Enable="true"/>
-    <Photometry Enable="true"/>
+    <Astrometry Enable="false"/>
+    <Photometry Enable="false"/>
     <Motion Enable="true"/>
 </Function>
 <PreProcess>

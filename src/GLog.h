@@ -53,7 +53,7 @@ protected:
 	 * @return
 	 * 检查并创建日志文件
 	 */
-	bool valid_file(std::tm &utc);
+	bool valid_file(std::tm &tmLoc);
 
 protected:
 	typedef std::unique_lock<std::mutex> mutex_lock;

@@ -14,7 +14,8 @@ adips_LDFLAGS = -L/usr/local/lib
 adips_LDADD = -lm -lcfitsio 
 if LINUX
 adips_LDADD += -lboost_system-mt-x64 -lboost_thread-mt-x64 -lboost_date_time-mt-x64 \
-               -lboost_chrono-mt-x64 -lboost_regex-mt-x64 -lboost_filesystem-mt-x64 -lrt
+               -lboost_chrono-mt-x64 -lboost_regex-mt-x64 -lboost_filesystem-mt-x64 \
+               -lrt
 endif
 if OSX
 adips_LDADD += -lboost_system-mt -lboost_thread-mt -lboost_date_time-mt -lboost_chrono \

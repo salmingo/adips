@@ -24,7 +24,9 @@ ADIWorkFlow::~ADIWorkFlow() {
 }
 
 bool ADIWorkFlow::Start(Parameter* param) {
-	param_ = param;
+	param_     = param;
+	running_   = true;
+	procCount_ = 0;
 
 	const ADIReduce::CBResultSlot &slot1 = boost::bind(&ADIWorkFlow::DIReduceResult, this, _1);
 	reduce_.reset(new ADIReduce(param_));
@@ -52,10 +54,6 @@ bool ADIWorkFlow::Start(Parameter* param) {
 		thrd_motion_.reset(new boost::thread(boost::bind(&ADIWorkFlow::thread_motion, this)));
 	}
 
-	running_   = true;
-	procCount_ = 0;
-	// 休眠一段时间, 等待多线程完成准备
-	boost::this_thread::sleep_for(boost::chrono::milliseconds(200));
 	return true;
 }
 
@@ -97,6 +95,10 @@ void ADIWorkFlow::ProcessImage(const char* filePath) {
 	frame->pathdir  = pathFull.parent_path().string();
 	frame->filename = pathFull.filename().string();
 	frame->filetit  = pathFull.stem().string();
+	++procCount_;
+	if (thrd_astro_.unique())  ++procCount_;
+	if (thrd_photo_.unique())  ++procCount_;
+	if (thrd_motion_.unique()) ++procCount_;
 
 	// 加入队列并启动处理流程
 	mutex_lock lck(mtx_frm_reduce_);
@@ -107,45 +109,55 @@ void ADIWorkFlow::ProcessImage(const char* filePath) {
 /* 回调函数接口 */
 void ADIWorkFlow::DIReduceResult(bool rslt) {
 	--procCount_;
-	if (rslt && (param_->useAstrometry || param_->usePhotometry || param_->useMotion)) {// 处理成功
-		mutex_lock lck(mtx_frm_astro_);
-		dequeAstro_.push_back(reduce_->GetFrame());
-		cv_astro_.notify_one();
+	if (rslt) {// 处理成功
+		ImgFrmPtr frame = reduce_->GetFrame();
+		if (param_->useAstrometry || param_->usePhotometry || param_->useMotion) {// 后续处理: 触发定位
+			mutex_lock lck(mtx_frm_astro_);
+			dequeAstro_.push_back(frame);
+			cv_astro_.notify_one();
+		}
+		else OutputFrame(frame);
 	}
 	if (dequeReduce_.size()) {// 尝试处理缓存区中其它图像
 		cv_reduce_.notify_one();
 	}
-	else if (!thrd_astro_.unique() && ios_) {// 完成处理流程, 退出程序
+	else if (!procCount_ && ios_) {// 完成处理流程, 退出程序
 		ios_->stop();
 	}
 }
 
 void ADIWorkFlow::AstrometryResult(bool rslt) {
 	--procCount_;
-	if (rslt && (param_->usePhotometry || param_->useMotion)) {// 处理成功
+	ImgFrmPtr frame = astrometry_->GetFrame();
+	if (rslt && (param_->usePhotometry || param_->useMotion)) {// 后续处理: 触发测光
 		mutex_lock lck(mtx_frm_photo_);
-		dequePhoto_.push_back(astrometry_->GetFrame());
+		dequePhoto_.push_back(frame);
 		cv_photo_.notify_one();
 	}
+	else OutputFrame(frame);
+
 	if (dequeAstro_.size()) {// 尝试处理缓存区中其它图像
 		cv_astro_.notify_one();
 	}
-	else if (!thrd_photo_.unique() && ios_) {// 完成处理流程, 退出程序
+	else if (!procCount_ && ios_) {// 完成处理流程, 退出程序
 		ios_->stop();
 	}
 }
 
 void ADIWorkFlow::PhotometryResult(bool rslt) {
 	--procCount_;
-	if (rslt && param_->useMotion) {// 处理成功
+	ImgFrmPtr frame = photometry_->GetFrame();
+	OutputFrame(frame);
+
+	if (rslt && param_->useMotion) {// 后续处理: 触发运动关联
 		mutex_lock lck(mtx_frm_motion_);
-		dequeMotion_.push_back(photometry_->GetFrame());
+		dequeMotion_.push_back(frame);
 		cv_motion_.notify_one();
 	}
 	if (dequePhoto_.size()) {// 尝试处理缓存区中其它图像
 		cv_photo_.notify_one();
 	}
-	else if (!thrd_motion_.unique() && ios_) {// 完成处理流程, 退出程序
+	else if (!procCount_ && ios_) {// 完成处理流程, 退出程序
 		ios_->stop();
 	}
 }
@@ -155,9 +167,13 @@ void ADIWorkFlow::MotionResult(bool rslt) {
 	if (dequeMotion_.size()) {// 尝试处理缓存区中其它图像
 		cv_motion_.notify_one();
 	}
-	else if (ios_) {// 完成处理流程, 退出程序
+	else if (!procCount_ && ios_) {// 完成处理流程, 退出程序
 		ios_->stop();
 	}
+}
+
+void ADIWorkFlow::OutputFrame(ImgFrmPtr frame) {
+	//...输出图像帧处理结果
 }
 
 /* 线程接口 */
@@ -173,8 +189,7 @@ void ADIWorkFlow::thread_reduce() {
 			ImgFrmPtr frame;
 			frame = dequeReduce_.front();
 			dequeReduce_.pop_front();
-			++procCount_;
-			reduce_->DoIt(frame);
+			if (!reduce_->DoIt(frame)) --procCount_;
 		}
 	}
 }
@@ -191,8 +206,7 @@ void ADIWorkFlow::thread_astro() {
 			ImgFrmPtr frame;
 			frame = dequeAstro_.front();
 			dequeAstro_.pop_front();
-			++procCount_;
-			astrometry_->DoIt(frame);
+			if (!astrometry_->DoIt(frame)) --procCount_;
 		}
 	}
 }
@@ -209,8 +223,7 @@ void ADIWorkFlow::thread_photo() {
 			ImgFrmPtr frame;
 			frame = dequePhoto_.front();
 			dequePhoto_.pop_front();
-			++procCount_;
-			photometry_->DoIt(frame);
+			if (!photometry_->DoIt(frame)) --procCount_;
 		}
 	}
 }
@@ -227,8 +240,7 @@ void ADIWorkFlow::thread_motion() {
 			ImgFrmPtr frame;
 			frame = dequeMotion_.front();
 			dequeMotion_.pop_front();
-			++procCount_;
-			motion_->DoIt(frame);
+			if (!motion_->DoIt(frame)) --procCount_;
 		}
 	}
 }

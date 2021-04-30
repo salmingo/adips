@@ -16,5 +16,7 @@ APhotometry::~APhotometry() {
 }
 
 bool APhotometry::do_real_process() {
+
+	frame_->succPhoto = true;
 	return true;
 }

@@ -16,5 +16,7 @@ AAstrometry::~AAstrometry() {
 }
 
 bool AAstrometry::do_real_process() {
+
+	frame_->succAstro = true;
 	return true;
 }

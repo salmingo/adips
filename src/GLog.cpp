@@ -106,15 +106,15 @@ void GLog::Write(const char *where, LOG_TYPE type, const char *format, ...) {
 	}
 }
 
-bool GLog::valid_file(std::tm &utc) {
+bool GLog::valid_file(std::tm &tmLoc) {
 	std::time_t now = std::time(nullptr);
-	memcpy(&utc, std::gmtime(&now), sizeof(std::tm));	// UTC
+	memcpy(&tmLoc, std::localtime(&now), sizeof(std::tm));	// Local Time
 
 	if (fd_ == stdout || fd_ == stderr)
 		return true;
 
-	if (dayOld_ != utc.tm_mday) {
-		dayOld_ = utc.tm_mday;
+	if (dayOld_ != tmLoc.tm_mday) {
+		dayOld_ = tmLoc.tm_mday;
 		if (fd_) {// 关闭已打开的日志文件
 			fprintf(fd_, "%s continue\n", std::string(69, '>').c_str());
 			fclose(fd_);
@@ -128,7 +128,7 @@ bool GLog::valid_file(std::tm &utc) {
 			char filepath[MAXPATHLEN];
 			sprintf (filepath, "%s%s%d%02d%02d.log",
 					dirName_.c_str(), prefix_.c_str(),
-					utc.tm_year + 1900, utc.tm_mon + 1, utc.tm_mday);
+					tmLoc.tm_year + 1900, tmLoc.tm_mon + 1, tmLoc.tm_mday);
 			fd_ = fopen(filepath, "a+");
 			fprintf(fd_, "%s\n", std::string(79, '-').c_str());
 		}

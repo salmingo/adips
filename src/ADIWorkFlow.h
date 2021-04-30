@@ -46,7 +46,7 @@ protected:
 	Parameter* param_;	/// 配置参数
 	boost::asio::io_service* ios_;	/// 输入输出接口
 	bool running_;		/// 运行标志
-	int procCount_;		/// 处理过程计数
+	int procCount_;		/// 未完成处理过程计数
 
 	/* 数据处理接口 */
 	boost::shared_ptr<ADIReduce>   reduce_;
@@ -129,6 +129,11 @@ protected:
 	 * @param rslt  关联处理结果
 	 */
 	void MotionResult(bool rslt);
+	/*!
+	 * @brief 输出图像帧处理结果
+	 * @param frame  图像帧
+	 */
+	void OutputFrame(ImgFrmPtr frame);
 
 protected:
 	/* 线程接口 */
