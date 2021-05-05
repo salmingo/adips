@@ -103,7 +103,7 @@ void ADIWorkFlow::ProcessImage(const char* filePath) {
 	// 加入队列并启动处理流程
 	mutex_lock lck(mtx_frm_reduce_);
 	dequeReduce_.push_back(frame);
-	cv_reduce_.notify_one();
+	if (!reduce_->IsWorking()) cv_reduce_.notify_one();
 }
 
 /* 回调函数接口 */
@@ -173,7 +173,10 @@ void ADIWorkFlow::MotionResult(bool rslt) {
 }
 
 void ADIWorkFlow::OutputFrame(ImgFrmPtr frame) {
-	//...输出图像帧处理结果
+	if (param_->outputFinalResult) {//...输出目标测量结果
+	}
+	if (frame->succAstro) {//...输出天文定位结果
+	}
 }
 
 /* 线程接口 */

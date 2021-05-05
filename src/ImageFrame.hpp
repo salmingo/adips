@@ -62,8 +62,9 @@ struct ImageFrame {
 	std::string filename;	/// 文件名
 	std::string filetit;	/// 文件名(不含扩展名)
 	std::string dateobs;	/// 曝光起始时间, 格式: CCYY-MM-DDThh:mm:ss.sss<sss>. UTC
-	int wimg, himg;			/// 图像像素数
+	int wImg, hImg;			/// 图像像素数
 	double expdur;			/// 曝光时间, 量纲: 秒
+	/* 全局背景统计结果, 用于图像显示时调节对比度 */
 	/* 目标提取结果 */
 	double fwhm;			/// 统计半高全宽
 	/* 天文定位结果 */

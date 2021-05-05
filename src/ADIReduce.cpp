@@ -4,16 +4,14 @@
  * @date 2021-04
  */
 
-
 #include "ADIReduce.h"
 #include "GLog.h"
 
 ADIReduce::ADIReduce(Parameter* param)
 	: ADIProcess(param) {
 	nameFunc_ = "reducing";
-	maxThread_ = boost::thread::hardware_concurrency() / 2;
-	if (maxThread_ == 0) maxThread_ = 1;
-	_gLog.Write("thread concurrency count: %d", maxThread_);
+	bkSpacePtr_ = BackStatSpace::Create(param);
+	loadPreproc_= 0;
 }
 
 ADIReduce::~ADIReduce() {
@@ -21,7 +19,7 @@ ADIReduce::~ADIReduce() {
 
 bool ADIReduce::do_real_process() {
 	// 读取图像文件头和数据
-	int retCode = hFITS_.LoadImage(frame_->filepath.c_str());
+	int retCode = fitsImg_.LoadImage(frame_->filepath.c_str());
 	if (retCode) {
 		_gLog.Write(LOG_FAULT, "[%s]: %s", frame_->filename.c_str(),
 				retCode == 1 ? "open error"
@@ -29,8 +27,34 @@ bool ADIReduce::do_real_process() {
 						: "data read error"));
 		return false;
 	}
-	// 统计背景
+	frame_->wImg    = fitsImg_.wImg;
+	frame_->hImg    = fitsImg_.hImg;
+	frame_->expdur  = fitsImg_.expdur;
+	frame_->dateobs = fitsImg_.dateobs;
+	// 预处理
+	if (param_->preRemoveBadpix) {// 剔除坏像素
 
+	}
+
+	if (!loadPreproc_) {// 尝试加载预处理图像
+
+	}
+	if (loadPreproc_ == 1) {
+		if (param_->pathDark.size()) {
+
+		}
+		if (param_->pathFlat.size()) {
+
+		}
+	}
+
+	// 统计背景
+	if (param_->backMode == FILTER_SPACE) {// 空域
+		bkSpacePtr_->ProcImage(fitsImg_.data, frame_);
+	}
+	else {// 频域
+
+	}
 	// 提取信号
 
 	// 目标聚合
@@ -40,4 +64,28 @@ bool ADIReduce::do_real_process() {
 	// 处理特殊目标
 
 	return true;
+}
+
+void ADIReduce::remove_bad_pixels() {
+
+}
+
+void ADIReduce::load_preproc_images() {
+
+}
+
+bool ADIReduce::precheck_dimension() {
+	return true;
+}
+
+void ADIReduce::preprocess_zero() {
+
+}
+
+void ADIReduce::preprocess_dark() {
+
+}
+
+void ADIReduce::preprocess_flat() {
+
 }

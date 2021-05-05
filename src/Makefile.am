@@ -1,5 +1,5 @@
 bin_PROGRAMS=adips
-adips_SOURCES=GLog.cpp ADIProcess.cpp ADIReduce.cpp AAstrometry.cpp \
+adips_SOURCES=GLog.cpp BackStatSpace.cpp ADIProcess.cpp ADIReduce.cpp AAstrometry.cpp \
               APhotometry.cpp AFindPV.cpp ADIWorkFlow.cpp adips.cpp
 
 if DEBUG

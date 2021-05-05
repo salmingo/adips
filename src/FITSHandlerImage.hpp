@@ -17,11 +17,13 @@
 #include <fitsio.h>
 #include <string>
 
-class FITSHandlerImage {
-protected:
+struct FITSHandlerImage {
+public:
 	/* 成员变量 */
 	float* data;		/// 图像数据存储区
 	int wImg, hImg;		/// 图像大小
+	int xStart, yStart;	/// ROI区起始地址....0/1??
+	int xBin, yBin;		/// ROI区合并因子
 	std::string dateobs;/// 曝光起始时间, 格式: CCYY-MM-DDThh:mm:ss.sss<sss>. UTC
 	double expdur;		/// 曝光时间, 量纲: 秒
 
@@ -30,6 +32,8 @@ public:
 	FITSHandlerImage() {
 		data = NULL;
 		wImg = hImg = 0;
+		xStart = yStart = 1;
+		xBin = yBin = 1;
 		expdur = 0.0;
 	}
 
