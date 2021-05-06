@@ -33,21 +33,21 @@ bool ADIWorkFlow::Start(Parameter* param) {
 	reduce_->RegisterResult(slot1);
 	thrd_reduce_.reset(new boost::thread(boost::bind(&ADIWorkFlow::thread_reduce, this)));
 
-	if (param->useAstrometry || param->usePhotometry || param->useMotion) {
+	if (param->funcs.useAstrometry || param->funcs.usePhotometry || param->funcs.useMotion) {
 		const ADIReduce::CBResultSlot &slot2 = boost::bind(&ADIWorkFlow::AstrometryResult, this, _1);
 		astrometry_.reset(new AAstrometry(param_));
 		astrometry_->RegisterResult(slot2);
 		thrd_astro_.reset(new boost::thread(boost::bind(&ADIWorkFlow::thread_astro, this)));
 	}
 
-	if (param->usePhotometry || param->useMotion) {
+	if (param->funcs.usePhotometry || param->funcs.useMotion) {
 		const ADIReduce::CBResultSlot &slot2 = boost::bind(&ADIWorkFlow::PhotometryResult, this, _1);
 		photometry_.reset(new APhotometry(param_));
 		photometry_->RegisterResult(slot2);
 		thrd_photo_.reset(new boost::thread(boost::bind(&ADIWorkFlow::thread_photo, this)));
 	}
 
-	if (param->useMotion) {
+	if (param->funcs.useMotion) {
 		const ADIReduce::CBResultSlot &slot2 = boost::bind(&ADIWorkFlow::MotionResult, this, _1);
 		motion_.reset(new AFindPV(param_));
 		motion_->RegisterResult(slot2);
@@ -111,7 +111,7 @@ void ADIWorkFlow::DIReduceResult(bool rslt) {
 	--procCount_;
 	if (rslt) {// 处理成功
 		ImgFrmPtr frame = reduce_->GetFrame();
-		if (param_->useAstrometry || param_->usePhotometry || param_->useMotion) {// 后续处理: 触发定位
+		if (param_->funcs.useAstrometry || param_->funcs.usePhotometry || param_->funcs.useMotion) {// 后续处理: 触发定位
 			mutex_lock lck(mtx_frm_astro_);
 			dequeAstro_.push_back(frame);
 			cv_astro_.notify_one();
@@ -129,7 +129,7 @@ void ADIWorkFlow::DIReduceResult(bool rslt) {
 void ADIWorkFlow::AstrometryResult(bool rslt) {
 	--procCount_;
 	ImgFrmPtr frame = astrometry_->GetFrame();
-	if (rslt && (param_->usePhotometry || param_->useMotion)) {// 后续处理: 触发测光
+	if (rslt && (param_->funcs.usePhotometry || param_->funcs.useMotion)) {// 后续处理: 触发测光
 		mutex_lock lck(mtx_frm_photo_);
 		dequePhoto_.push_back(frame);
 		cv_photo_.notify_one();
@@ -149,7 +149,7 @@ void ADIWorkFlow::PhotometryResult(bool rslt) {
 	ImgFrmPtr frame = photometry_->GetFrame();
 	OutputFrame(frame);
 
-	if (rslt && param_->useMotion) {// 后续处理: 触发运动关联
+	if (rslt && param_->funcs.useMotion) {// 后续处理: 触发运动关联
 		mutex_lock lck(mtx_frm_motion_);
 		dequeMotion_.push_back(frame);
 		cv_motion_.notify_one();
@@ -173,7 +173,7 @@ void ADIWorkFlow::MotionResult(bool rslt) {
 }
 
 void ADIWorkFlow::OutputFrame(ImgFrmPtr frame) {
-	if (param_->outputFinalResult) {//...输出目标测量结果
+	if (param_->output.rsltFinal) {//...输出目标测量结果
 	}
 	if (frame->succAstro) {//...输出天文定位结果
 	}

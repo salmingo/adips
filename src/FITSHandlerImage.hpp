@@ -20,12 +20,12 @@
 struct FITSHandlerImage {
 public:
 	/* 成员变量 */
-	float* data;		/// 图像数据存储区
-	int wImg, hImg;		/// 图像大小
-	int xStart, yStart;	/// ROI区起始地址....0/1??
-	int xBin, yBin;		/// ROI区合并因子
-	std::string dateobs;/// 曝光起始时间, 格式: CCYY-MM-DDThh:mm:ss.sss<sss>. UTC
-	double expdur;		/// 曝光时间, 量纲: 秒
+	float* data;				/// 图像数据存储区
+	unsigned wImg, hImg;		/// 图像大小
+	unsigned xStart, yStart;	/// ROI区起始地址: 1
+	unsigned xBin, yBin;		/// ROI区合并因子
+	std::string dateobs;		/// 曝光起始时间, 格式: CCYY-MM-DDThh:mm:ss<.sss<sss>>, UTC
+	double expdur;				/// 曝光时间, 量纲: 秒
 
 public:
 	/* 构造与析构函数 */
@@ -55,7 +55,8 @@ public:
 	 */
 	int LoadImage(const char* filepath) {
 		fitsfile *hFits;
-		int state(0), w, h;
+		int state(0);
+		unsigned w, h;
 		char obsdate[30], obstime[30], tmfull[40];
 		bool datefull;
 
@@ -63,8 +64,8 @@ public:
 		fits_open_image(&hFits, filepath, 0, &state);
 		if (state) return 1;
 		// 读取关键文件头信息
-		fits_read_key(hFits, TINT, "NAXIS1", &w, NULL, &state);
-		fits_read_key(hFits, TINT, "NAXIS2", &h, NULL, &state);
+		fits_read_key(hFits, TUINT, "NAXIS1", &w, NULL, &state);
+		fits_read_key(hFits, TUINT, "NAXIS2", &h, NULL, &state);
 		fits_read_key(hFits, TSTRING, "DATE-OBS", obsdate,  NULL, &state);
 		if (!(datefull = NULL != strstr(obsdate, "T")))
 			fits_read_key(hFits, TSTRING, "TIME-OBS", obstime,  NULL, &state);
@@ -95,14 +96,15 @@ public:
 
 	bool LookImage(const char* filepath) {
 		fitsfile *hFits;
-		int state(0), w, h;
+		int state(0);
+		unsigned w, h;
 
 		// 尝试打开文件
 		fits_open_image(&hFits, filepath, 0, &state);
 		if (state) return false;
 		// 读取关键文件头信息
-		fits_read_key(hFits, TINT, "NAXIS1", &w, NULL, &state);
-		fits_read_key(hFits, TINT, "NAXIS2", &h, NULL, &state);
+		fits_read_key(hFits, TUINT, "NAXIS1", &w, NULL, &state);
+		fits_read_key(hFits, TUINT, "NAXIS2", &h, NULL, &state);
 		alloc_buff(w, 1);
 		hImg = h;
 		close_file(hFits);
@@ -117,7 +119,7 @@ public:
 	 * @return
 	 * 数据存储区地址
 	 */
-	float* GetImage(int& w, int& h) {
+	float* GetImage(unsigned &w, unsigned &h) {
 		w = wImg;
 		h = hImg;
 		return data;
@@ -129,7 +131,7 @@ public:
 	 * @return
 	 * 数据存储区地址
 	 */
-	float *GetLine(const char* filepath, int line) {
+	float *GetLine(const char* filepath, unsigned line) {
 		fitsfile *hFits;
 		int state(0);
 		fits_open_image(&hFits, filepath, 0, &state);
@@ -151,9 +153,9 @@ public:
 
 protected:
 	/* 功能 */
-	void alloc_buff(int w, int h) {
-		int pixNew = w * h;
-		int pixOld = wImg * hImg;
+	void alloc_buff(unsigned w, unsigned h) {
+		unsigned pixNew = w * h;
+		unsigned pixOld = wImg * hImg;
 		if (pixNew != pixOld && data != NULL) {
 			delete []data;
 			data = NULL;

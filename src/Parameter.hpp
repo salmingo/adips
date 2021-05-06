@@ -21,59 +21,65 @@ enum {
 	FILTER_FREQ_DOMAIN	/// 频域滤波
 };
 
+struct ParamFunction {
+	bool useAstrometry;	/// 天文定位
+	bool usePhotometry;	/// 测光
+	bool useMotion;		/// 运动关联
+};
+
+struct ParamPreProcess {
+	string pathWork;	/// 工作路径. 处理结果存储在该目录下
+	string pathZero;	/// 合并后本底路径
+	string pathDark;	/// 合并后暗场路径
+	string pathFlat;	/// 合并后平场路径
+	bool badPixRemove;	/// 剔除坏像素
+};
+
+// 背景算法
+struct ParamBackground {
+	bool useGlobal;		/// 使用全局背景
+	int mode;			/// 背景滤波算法. 1: 空域滤波; 2: 频域滤波
+	int gridWidth;		/// 背景网格宽度
+	int gridHeight;		/// 背景网格高度
+	int filterX;		/// 背景X方向滤波宽度
+	int filterY;		/// 背景Y方向滤波高度
+};
+
+struct ParamExtractSignal {
+	int modeFilter;		/// 检测信号前应用滤波算法
+	float sigMin;		/// 最小信噪比
+};
+
+// 目标测量参数
+struct ParamMeasureBlob {
+	int pixMin;		/// 构成目标的最小像素数
+	int pixMax;		/// 构成目标的最大像素数. 0: 无限制
+};
+
+struct ParamOutput {
+	bool rsltInter;	/// 输出中间结果, 包括滤波后背景、噪声等
+	bool rsltFinal;	/// 输出处理结果, 包括所有被识别目标
+	bool wcsAlone;	/// 输出单独的WCS文件. 否则写入原始FITS头
+};
+
+struct ParamCorrectClock {
+	bool correct;		/// 使用时间修正
+	int msPreClean;		/// 收到曝光指令后的芯片清空时间, 量纲: 毫秒
+	int msLinesShift;	/// 图像行转移时间, 量纲： 毫秒
+};
+
 struct Parameter {
 	/* 功能 */
-	struct {
-		bool use_astrometry;	/// 天文定位
-		bool use_photometry;	/// 测光
-		bool use_motion;		/// 运动关联
-	} funcs;
+	ParamFunction funcs;
 
 	/* 图像处理 */
-	// 预处理
-	struct {
-		string path_work;	/// 工作路径. 处理结果存储在该目录下
-		string path_zero;	/// 合并后本底路径
-		string path_dark;	/// 合并后暗场路径
-		string path_flat;	/// 合并后平场路径
-		bool remove_badpix;	/// 剔除坏像素
-	} preProc;
-
-	// 背景算法
-	struct {
-		bool bk_global;		/// 使用全局背景
-		int bk_mode;		/// 背景滤波算法. 1: 空域滤波; 2: 频域滤波
-		int bk_grid_width;	/// 背景网格宽度
-		int bk_grid_height;	/// 背景网格高度
-		int bk_filter_x;	/// 背景X方向滤波宽度
-		int bk_filter_y;	/// 背景Y方向滤波高度
-	} backStat;
-
-	// 信号提取参数
-	struct {
-		bool sigUseFilter;		/// 检测信号前应用滤波算法
-		float sigSNR;			/// 最小信噪比
-	} sigExtract;
-
-	// 信号测量参数
-	struct {
-		int blobPixMin;			/// 构成目标的最小像素数
-		int blobPixMax;			/// 构成目标的最大像素数. 0: 无限制
-	} blobMeasure;
-
-	// 目标输出参数
-	struct {
-		bool outputInterResult;	/// 输出中间结果, 包括滤波后背景、噪声等
-		bool outputFinalResult;	/// 输出处理结果, 包括所有被识别目标
-		bool outputAloneWCS;	/// 输出单独的WCS文件. 否则写入原始FITS头
-	} output;
-
+	ParamPreProcess preProc;		// 预处理
+	ParamBackground backStat;		// 统计背景
+	ParamExtractSignal sigExtract;	// 信号提取参数
+	ParamMeasureBlob blobMeasure;	// 测量目标
+	ParamOutput output;				// 目标输出参数
 	/* CMOS相机时间修正参数 */
-	struct {
-		bool clockCorrect;		/// 使用时间修正
-		int msPreClean;			/// 收到曝光指令后的芯片清空时间, 量纲: 毫秒
-		int msLinesShift;		/// 图像行转移时间, 量纲： 毫秒
-	} cmosCorrect;
+	ParamCorrectClock clockCorrect;	// 时间修正
 
 public:
 	/*!
@@ -106,13 +112,12 @@ public:
 		node3.add("Filter.<xmlattr>.Mode",       1);
 		node3.add("Grid.<xmlattr>.Width",        32);
 		node3.add("Grid.<xmlattr>.Height",       32);
-		node3.add("Filter.<xmlattr>.Horizontal", 3);
-		node3.add("Filter.<xmlattr>.Vertical",   3);
+		node3.add("Filter.<xmlattr>.X",          3);
+		node3.add("Filter.<xmlattr>.Y",          3);
 
 		ptree& node4 = nodes.add("ResolveSignal",    "");
-		node4.add("Filter.<xmlattr>.Enable",         false);
-		node4.add("Filter.<xmlattr>.FilePath",       "/usr/local/etc/adips/default.conv");
-		node4.add("SNR.<xmlattr>.Minimum",           1.5);
+		node4.add("Filter.<xmlattr>.Mode",     0);
+		node4.add("SNR.<xmlattr>.Minimum",     1.5);
 
 		ptree& node5 = nodes.add("BlobMesurement", "");
 		node5.add("PixelNumber.<xmlattr>.Minimum", 1);
@@ -149,46 +154,45 @@ public:
 			read_xml(filepath, nodes, trim_whitespace);
 			BOOST_FOREACH(ptree::value_type const &child, nodes.get_child("")) {
 				if (boost::iequals(child.first, "Function")) {
-					useAstrometry = child.second.get("Astrometry.<xmlattr>.Enable",  false);
-					usePhotometry = child.second.get("Photometry.<xmlattr>.Enable",  false);
-					useMotion     = child.second.get("Motion.<xmlattr>.Enable",      false);
+					funcs.useAstrometry = child.second.get("Astrometry.<xmlattr>.Enable",  false);
+					funcs.usePhotometry = child.second.get("Photometry.<xmlattr>.Enable",  false);
+					funcs.useMotion     = child.second.get("Motion.<xmlattr>.Enable",      false);
 				}
 				else if (boost::iequals(child.first, "PreProcess")) {
-					pathWork = child.second.get("Work.<xmlattr>.Dir",  "");
-					pathZero = child.second.get("ZERO.<xmlattr>.Path", "");
-					pathDark = child.second.get("DARK.<xmlattr>.Path", "");
-					pathFlat = child.second.get("FLAT.<xmlattr>.Path", "");
-					preRemoveBadpix = child.second.get("RemoveBadPixel.<xmlattr>.Enable", false);
+					preProc.pathWork = child.second.get("Work.<xmlattr>.Dir",  "");
+					preProc.pathZero = child.second.get("ZERO.<xmlattr>.Path", "");
+					preProc.pathDark = child.second.get("DARK.<xmlattr>.Path", "");
+					preProc.pathFlat = child.second.get("FLAT.<xmlattr>.Path", "");
+					preProc.badPixRemove = child.second.get("RemoveBadPixel.<xmlattr>.Enable", false);
 				}
 				else if (boost::iequals(child.first, "BackGround")) {
-					backGlobal     = child.second.get("Global.<xmlattr>.Enable",     false);
-					backMode       = child.second.get("Filter.<xmlattr>.Mode",       FILTER_SPACE);
-					backGridHor    = child.second.get("Grid.<xmlattr>.Horizontal",   32);
-					backGridVer    = child.second.get("Grid.<xmlattr>.Vertical",     32);
-					backFilterHor  = child.second.get("Filter.<xmlattr>.Horizontal", 3);
-					backFilterVer  = child.second.get("Filter.<xmlattr>.Vertical",   3);
+					backStat.useGlobal   = child.second.get("Global.<xmlattr>.Enable",     false);
+					backStat.mode        = child.second.get("Filter.<xmlattr>.Mode",       1);
+					backStat.gridWidth   = child.second.get("Grid.<xmlattr>.Width",        32);
+					backStat.gridHeight  = child.second.get("Grid.<xmlattr>.Height",       32);
+					backStat.filterX     = child.second.get("Filter.<xmlattr>.X",          3);
+					backStat.filterY     = child.second.get("Filter.<xmlattr>.Y",          3);
 				}
 				else if (boost::iequals(child.first, "ResolveSignal")) {
-					sigUseFilter    = child.second.get("Filter.<xmlattr>.Enable",         false);
-					sigPathFilter   = child.second.get("Filter.<xmlattr>.FilePath",       "");
-					sigSNR          = child.second.get("SNR.<xmlattr>.Minimum",           1.5);
+					sigExtract.modeFilter = child.second.get("Filter.<xmlattr>.Mode",     0);
+					sigExtract.sigMin     = child.second.get("SNR.<xmlattr>.Minimum",     1.5);
 				}
 				else if (boost::iequals(child.first, "BlobMesurement")) {
-					blobPixMin = child.second.get("PixelNumber.<xmlattr>.Minimum",  1);
-					blobPixMax = child.second.get("PixelNumber.<xmlattr>.Maximum",  0);
+					blobMeasure.pixMin = child.second.get("PixelNumber.<xmlattr>.Minimum",  1);
+					blobMeasure.pixMax = child.second.get("PixelNumber.<xmlattr>.Maximum",  0);
 
-					if (blobPixMin <= 0) blobPixMin = 1;
-					if (blobPixMax <= 0) blobPixMax = 0;
+					if (blobMeasure.pixMin <= 0) blobMeasure.pixMin = 1;
+					if (blobMeasure.pixMax <= 0) blobMeasure.pixMax = 0;
 				}
 				else if (boost::iequals(child.first, "Output")) {
-					outputFinalResult = child.second.get("Result.<xmlattr>.Final",         false);
-					outputInterResult = child.second.get("Result.<xmlattr>.Intermediate",  false);
-					outputAloneWCS    = child.second.get("WCS.<xmlattr>.Alone",            false);
+					output.rsltFinal = child.second.get("Result.<xmlattr>.Final",         false);
+					output.rsltInter = child.second.get("Result.<xmlattr>.Intermediate",  false);
+					output.wcsAlone  = child.second.get("WCS.<xmlattr>.Alone",            false);
 				}
 				else if (boost::iequals(child.first, "Clock-Correct-For-CMOS")) {
-					clockCorrect = child.second.get("<xmlattr>.Enable",     false);
-					msPreClean   = child.second.get("<xmlattr>.PreClean",   0);
-					msLinesShift = child.second.get("<xmlattr>.LinesShift", 0);
+					clockCorrect.correct = child.second.get("<xmlattr>.Enable",     false);
+					clockCorrect.msPreClean   = child.second.get("<xmlattr>.PreClean",   0);
+					clockCorrect.msLinesShift = child.second.get("<xmlattr>.LinesShift", 0);
 				}
 			}
 
