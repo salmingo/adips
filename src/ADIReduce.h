@@ -25,9 +25,29 @@ protected:
 		unsigned width, height;
 		float* buff;
 
+	protected:
+		unsigned pixOld;
+
+	protected:
+		bool resize(unsigned w, unsigned h) {
+			unsigned pixNew = w * h;
+			if (pixNew != pixOld && buff) {
+				delete []buff;
+				buff = NULL;
+			}
+			if (!buff) {
+				buff   = new float[pixNew];
+				pixOld = pixNew;
+			}
+			width  = w;
+			height = h;
+			return buff != NULL;
+		}
+
 	public:
 		ImageBuffer() {
 			width = height = 0;
+			pixOld = 0;
 			buff = NULL;
 		}
 
@@ -35,23 +55,12 @@ protected:
 			if (buff) delete []buff;
 		}
 
-		void Resize(unsigned w, unsigned h) {
-			unsigned pixNew = w * h;
-			unsigned pixOld = width * height;
-			if (pixNew != pixOld && buff) {
-				delete []buff;
-				buff = NULL;
-			}
-			if (!buff) buff = new float[pixNew];
-			width  = w;
-			height = h;
-		}
-
 		bool CopyData(float* data, unsigned w, unsigned h) {
-			Resize(w, h);
-			if (!buff) return false;
-			memcpy(buff, data, w * h * sizeof(float));
-			return true;
+			if (resize(w, h)) {
+				memcpy(buff, data, w * h * sizeof(float));
+				return true;
+			}
+			return false;
 		}
 	};
 
@@ -127,7 +136,7 @@ protected:
 	 * @return
 	 * 判定结果
 	 */
-	int  bad_pixel_neighbor(char* mask, unsigned w, unsigned x, unsigned y);
+	int bad_pixel_neighbor(char* mask, unsigned w, unsigned x, unsigned y);
 };
 
 #endif /* ADIREDUCE_H_ */
