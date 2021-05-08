@@ -106,10 +106,28 @@ protected:
 	/*!
 	 * @brief 移除坏像素
 	 */
-	void remove_bad_pixels();
-	bool check_bad_pixel(float* data, unsigned w, unsigned h, unsigned x, unsigned y);
-	int  check_bad_pixel_neighbor(char* mask, unsigned w, unsigned h, unsigned x, unsigned y);
-	float correct_bad_pixel(float* data, unsigned w, unsigned h, unsigned x, unsigned y);
+	void bad_pixels_remove();
+	/*!
+	 * @brief 检查是否坏像素, 并在确认是坏像素时计算其修正值
+	 * @param data   原始数据
+	 * @param w      图像帧宽度
+	 * @param x      X坐标
+	 * @param y      Y坐标
+	 * @param pixv   修正值
+	 * @return
+	 * 坏像素判定结果
+	 */
+	bool bad_pixel_whether(float* data, unsigned w, unsigned x, unsigned y, float& pixv);
+	/*!
+	 * @brief 检查是否坏像素邻居
+	 * @param mask  坏像素标记
+	 * @param w      图像帧宽度
+	 * @param x      X坐标
+	 * @param y      Y坐标
+	 * @return
+	 * 判定结果
+	 */
+	int  bad_pixel_neighbor(char* mask, unsigned w, unsigned x, unsigned y);
 };
 
 #endif /* ADIREDUCE_H_ */

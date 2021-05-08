@@ -4,6 +4,7 @@
  * @date 2021-04
  */
 
+#include <math.h>
 #include "ADIReduce.h"
 #include "GLog.h"
 
@@ -32,8 +33,6 @@ bool ADIReduce::do_real_process() {
 	frame_->expdur  = fitsImg_.expdur;
 	frame_->dateobs = fitsImg_.dateobs;
 	/* 预处理 */
-	// 剔除坏像素
-	if (param_->preProc.badPixRemove) remove_bad_pixels();
 	// 尝试加载预处理图像
 	if (!loadPreproc_) load_preproc_images();
 	if (loadPreproc_ == 1) {// 预处理
@@ -41,6 +40,10 @@ bool ADIReduce::do_real_process() {
 		if (param_->preProc.pathDark.size()) preprocess_dark();
 		if (param_->preProc.pathFlat.size()) preprocess_flat();
 	}
+	// 全局背景统计
+
+	// 剔除坏像素
+	if (param_->preProc.badPixRemove) bad_pixels_remove();
 	// 统计背景
 	switch (param_->backStat.mode) {
 	case FILTER_SPACE:
@@ -84,7 +87,7 @@ void ADIReduce::preprocess_flat() {
 
 /*---------------------------------------------------------------------------*/
 /* 接口: 坏像素 */
-void ADIReduce::remove_bad_pixels() {
+void ADIReduce::bad_pixels_remove() {
 	_gLog.Write("removing hot and dark pixels");
 	// 备份原始数据. 之后原始数据区存储处理结果, 备份区作为原始输入
 	unsigned w = fitsImg_.wImg;
@@ -103,13 +106,15 @@ void ADIReduce::remove_bad_pixels() {
 	unsigned x, y;
 	unsigned pos;
 	int step;
+	float pixv;
+
 	// 遍历检测区
 	for (y = y1, pos = y1 * w; y < y2; ++y, pos += w) {
 		for (x = x1; x < x2; ++x) {
-			if ((step = check_bad_pixel_neighbor(badMarked, w, h, x, y))) x += step;
-			else if (check_bad_pixel(bufSrc, w, h, x, y)) {
-				bufDst[pos + x]    = correct_bad_pixel(bufSrc, w, h, x, y);
+			if ((step = bad_pixel_neighbor(badMarked, w, x, y))) x += step;
+			else if (bad_pixel_whether(bufSrc, w, x, y, pixv)) {
 				badMarked[pos + x] = 1;
+				bufDst[pos + x]    = pixv;
 				++x;
 			}
 		}
@@ -119,24 +124,49 @@ void ADIReduce::remove_bad_pixels() {
 	delete []badMarked;
 }
 
-bool ADIReduce::check_bad_pixel(float* data, unsigned w, unsigned h, unsigned x, unsigned y) {
+bool ADIReduce::bad_pixel_whether(float* data, unsigned w, unsigned x, unsigned y, float& pixv) {
+	unsigned pos = y * w + x;
+	float val = data[pos], t;
+	double mean(0.0), sig(0.0);
+	int i, j, n(0);
 
+	// 判定: 梯度
+	for (j = -1, pos = pos - w; j <= 1; ++j, pos += w) {
+		for (i = -1; i <= 1; ++i) {
+			t = data[pos + i];
+			if (val > t) {
+				if (n < 0) return false;
+				++n;
+			}
+			else if (val < t) {
+				if (n > 0) return false;
+				--n;
+			}
+
+			mean += t;
+			sig  += t * t;
+		}
+	}
+	// 判定: 阈值
+	mean = (mean - val) * 0.125;
+	sig -= val * val;
+	sig  = (sig - 8.0 * mean * mean) / 7.0;
+	if (sig <= 0.0) return false;
+	sig = sqrt(sig);
+	t = float((val - mean) / sig);
+	if ((n > 0 && t < 10.0) || (n < 0 && t > -10.0)) return false;
+	pixv = mean;
+
+	_gLog.Write("%s: (%4u, %4u), sigma = %.1f, SNR = %.1f, %.0f ==> %.0f", n > 0 ? "Hot " : "Dark",
+			x, y, sig, t, val, pixv);
 	return true;
 }
 
-int ADIReduce::check_bad_pixel_neighbor(char* mask, unsigned w, unsigned h, unsigned x, unsigned y) {
+int ADIReduce::bad_pixel_neighbor(char* mask, unsigned w, unsigned x, unsigned y) {
 	unsigned above = (y - 1) * w + x;
 	if (mask[above])     return 1;  // 正上方
 	if (mask[above + 1]) return 2;  // 右上方
-	//...左上方
 	return 0;
-}
-
-float ADIReduce::correct_bad_pixel(float* data, unsigned w, unsigned h, unsigned x, unsigned y) {
-	double sum(0.0);
-	unsigned pos = y * w + x;
-	float t = data[pos];
-	return float((sum - t) * 0.125);
 }
 
 /*---------------------------------------------------------------------------*/

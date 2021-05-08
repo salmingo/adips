@@ -53,6 +53,7 @@ bool ADIWorkFlow::Start(Parameter* param) {
 		motion_->RegisterResult(slot2);
 		thrd_motion_.reset(new boost::thread(boost::bind(&ADIWorkFlow::thread_motion, this)));
 	}
+	boost::this_thread::sleep_for(boost::chrono::seconds(1));
 
 	return true;
 }
@@ -186,7 +187,6 @@ void ADIWorkFlow::thread_reduce() {
 
 	while (running_) {
 		cv_reduce_.wait(lck);
-
 		while (running_ && !reduce_->IsWorking() && dequeReduce_.size()) {
 			mutex_lock lck1(mtx_frm_reduce_);
 			ImgFrmPtr frame;

@@ -5449,6 +5449,12 @@ then :
   printf "%s\n" "@%:@define HAVE_MEMSET 1" >>confdefs.h
 
 fi
+ac_fn_c_check_func "$LINENO" "sqrt" "ac_cv_func_sqrt"
+if test "x$ac_cv_func_sqrt" = xyes
+then :
+  printf "%s\n" "@%:@define HAVE_SQRT 1" >>confdefs.h
+
+fi
 
 ac_fn_c_check_type "$LINENO" "_Bool" "ac_cv_type__Bool" "$ac_includes_default"
 if test "x$ac_cv_type__Bool" = xyes

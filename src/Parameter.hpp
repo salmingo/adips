@@ -78,6 +78,7 @@ struct Parameter {
 	ParamExtractSignal sigExtract;	// 信号提取参数
 	ParamMeasureBlob blobMeasure;	// 测量目标
 	ParamOutput output;				// 目标输出参数
+
 	/* CMOS相机时间修正参数 */
 	ParamCorrectClock clockCorrect;	// 时间修正
 

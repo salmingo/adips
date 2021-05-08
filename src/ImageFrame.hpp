@@ -65,6 +65,8 @@ struct ImageFrame {
 	unsigned wImg, hImg;	/// 图像像素数
 	double expdur;			/// 曝光时间, 量纲: 秒
 	/* 全局背景统计结果, 用于图像显示时调节对比度 */
+	double bkMean;			/// 全局背景均值
+	double bkSigma;			/// 全局背景统计噪声
 	/* 目标提取结果 */
 	double fwhm;			/// 统计半高全宽
 	/* 天文定位结果 */

@@ -53,7 +53,7 @@ AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
 
 AC_CHECK_HEADERS([sys/param.h unistd.h strings.h])
-AC_CHECK_FUNCS([getcwd mkdir bzero strstr memset])
+AC_CHECK_FUNCS([getcwd mkdir bzero strstr memset sqrt])
 AC_CHECK_HEADER_STDBOOL
 AC_FUNC_FORK
 AC_TYPE_PID_T
