@@ -10,7 +10,6 @@
 #include <string.h>
 #include "ADIProcess.h"
 #include "FITSHandlerImage.hpp"
-#include "BackStatSpace.h"
 
 class ADIReduce : public ADIProcess {
 public:
@@ -64,39 +63,110 @@ protected:
 		}
 	};
 
+	/*!
+	 * @struct MemoryBuffer 用于图像处理的内存缓冲区管理接口
+	 */
+	struct MemoryBuffer {
+		unsigned wImg, hImg;	/// 图像帧像素数
+		unsigned nbkx, nbky;	/// XY方向背景网格数量
+		float* backup;		/// 原始数据备份
+		float* bkmean;		/// 背景网格均值
+		float* bksig;		/// 背景网格噪声
+
+	protected:
+		unsigned bkw, bkh;	/// 背景网格宽度和高度
+
+	public:
+		MemoryBuffer(unsigned bkGridW, unsigned bkGridH) {
+			bkw = bkGridW;
+			bkh = bkGridH;
+			wImg = hImg = 0;
+			nbkx = nbky = 0;
+			backup = NULL;
+			bkmean = bksig = NULL;
+		}
+
+		virtual ~MemoryBuffer() {
+			if (backup) delete []backup;
+			if (bkmean) delete []bkmean;
+			if (bksig)  delete []bksig;
+		}
+
+		bool CopyData(float* data, unsigned wNew, unsigned hNew) {
+			if (!resize(wNew, hNew)) return false;
+			memcpy(backup, data, wNew * hNew * sizeof(float));
+			return true;
+		}
+
+	protected:
+		bool resize(unsigned wNew, unsigned hNew) {
+			unsigned pixOld = wImg * hImg;
+			unsigned pixNew = wNew * hNew;
+			// 检查并重新分配备份区
+			if (pixOld != pixNew && backup) {
+				delete []backup;
+				backup = NULL;
+			}
+			if (!backup) backup = new float[pixNew];
+			wImg = wNew;
+			hImg = hNew;
+			// 检查并重新分配网格区
+			pixOld = nbkx * nbky;
+			nbkx = (wNew - 1) / bkw + 1;
+			nbky = (hNew - 1) / bkh + 1;
+			pixNew = nbkx * nbky;
+			if (pixOld != pixNew) {
+				if (bkmean) delete[] bkmean;
+				if (bksig)  delete[] bksig;
+				bkmean = bksig = NULL;
+			}
+			if (!bkmean) bkmean = new float[pixNew];
+			if (!bksig)  bksig  = new float[pixNew];
+
+			return (backup != NULL && bkmean != NULL && bksig != NULL);
+		}
+	};
+	using MembuffPtr = boost::shared_ptr<MemoryBuffer>;
+
 protected:
-	FITSHandlerImage fitsZero_;	/// 本底图像文件接口
-	FITSHandlerImage fitsDark_;	/// 暗场图像文件接口
-	FITSHandlerImage fitsFlat_;	/// 平场图像文件接口
-	FITSHandlerImage fitsImg_;	/// FITS图像文件访问接口
-	ImageBuffer imgBackup_;		/// 图像帧数据备份
-	BkSpacePtr bkSpacePtr_;		/// 空域背景滤波接口
 	/*!
 	 * 预处理图像加载标志.
 	 * 0: 未加载
 	 * 1: 已加载
 	 * 2: 未指定预处理文件
-	 * 3: 不匹配
+	 * 3: 数据加载失败
 	 */
-	int loadPreproc_;
+	int loadPreprocZero_;
+	int loadPreprocDark_;
+	int loadPreprocFlat_;
+	FITSHandlerImage fitsZero_;	/// 本底图像文件接口
+	FITSHandlerImage fitsDark_;	/// 暗场图像文件接口
+	FITSHandlerImage fitsFlat_;	/// 平场图像文件接口
+	FITSHandlerImage fitsImg_;	/// FITS图像文件访问接口
+	MembuffPtr buffPtr_;		/// 数据处理内存缓冲区
+	ImageBuffer imgBackup_;		/// 图像帧数据备份
 
 protected:
+	/* 功能: 数据处理流程 */
 	/*!
 	 * @brief 在多进程模式下执行真正的处理流程
 	 */
 	bool do_real_process();
+
+protected:
+	/* 功能: 预处理 */
 	/*!
-	 * @brief 加载预处理图像帧数据
+	 * @brief 加载预处理图像帧数据: 合并后本底
 	 */
-	void load_preproc_images();
+	void load_preproc_zero();
 	/*!
-	 * @brief 检查预处理图像维度是否与图像帧相同
-	 * @return
-	 * 维度相同标志
-	 * @note
-	 * 支持图像帧为ROI模式
+	 * @brief 加载预处理图像帧数据: 合并后暗场
 	 */
-	bool precheck_dimension();
+	void load_preproc_dark();
+	/*!
+	 * @brief 加载预处理图像帧数据: 合并后平场
+	 */
+	void load_preproc_flat();
 	/*!
 	 * @brief 减本底
 	 */
@@ -111,7 +181,18 @@ protected:
 	void preprocess_flat();
 
 protected:
-	/* 接口: 坏像素 */
+	/* 功能: 背景统计 */
+	/*!
+	 * @brief 统计全帧图像背景, 用于调节图像对比度
+	 */
+	void back_stat_global();
+	/*!
+	 * @brief 在空域完成背景统计...
+	 */
+	void back_stat_grid();
+
+protected:
+	/* 功能: 坏像素 */
 	/*!
 	 * @brief 移除坏像素
 	 */

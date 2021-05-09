@@ -108,8 +108,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_adips_OBJECTS = GLog.$(OBJEXT) BackStatSpace.$(OBJEXT) \
-	ADIProcess.$(OBJEXT) ADIReduce.$(OBJEXT) AAstrometry.$(OBJEXT) \
+am_adips_OBJECTS = GLog.$(OBJEXT) ADIProcess.$(OBJEXT) \
+	ADIReduce.$(OBJEXT) AAstrometry.$(OBJEXT) \
 	APhotometry.$(OBJEXT) AFindPV.$(OBJEXT) ADIWorkFlow.$(OBJEXT) \
 	adips.$(OBJEXT)
 adips_OBJECTS = $(am_adips_OBJECTS)
@@ -135,8 +135,8 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/AAstrometry.Po \
 	./$(DEPDIR)/ADIProcess.Po ./$(DEPDIR)/ADIReduce.Po \
 	./$(DEPDIR)/ADIWorkFlow.Po ./$(DEPDIR)/AFindPV.Po \
-	./$(DEPDIR)/APhotometry.Po ./$(DEPDIR)/BackStatSpace.Po \
-	./$(DEPDIR)/GLog.Po ./$(DEPDIR)/adips.Po
+	./$(DEPDIR)/APhotometry.Po ./$(DEPDIR)/GLog.Po \
+	./$(DEPDIR)/adips.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -280,7 +280,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-adips_SOURCES = GLog.cpp BackStatSpace.cpp ADIProcess.cpp ADIReduce.cpp AAstrometry.cpp \
+adips_SOURCES = GLog.cpp ADIProcess.cpp ADIReduce.cpp AAstrometry.cpp \
               APhotometry.cpp AFindPV.cpp ADIWorkFlow.cpp adips.cpp
 
 @DEBUG_FALSE@AM_CFLAGS = -O3 -Wall
@@ -381,7 +381,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ADIWorkFlow.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/AFindPV.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/APhotometry.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/BackStatSpace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/GLog.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/adips.Po@am__quote@ # am--include-marker
 
@@ -538,7 +537,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/ADIWorkFlow.Po
 	-rm -f ./$(DEPDIR)/AFindPV.Po
 	-rm -f ./$(DEPDIR)/APhotometry.Po
-	-rm -f ./$(DEPDIR)/BackStatSpace.Po
 	-rm -f ./$(DEPDIR)/GLog.Po
 	-rm -f ./$(DEPDIR)/adips.Po
 	-rm -f Makefile
@@ -592,7 +590,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/ADIWorkFlow.Po
 	-rm -f ./$(DEPDIR)/AFindPV.Po
 	-rm -f ./$(DEPDIR)/APhotometry.Po
-	-rm -f ./$(DEPDIR)/BackStatSpace.Po
 	-rm -f ./$(DEPDIR)/GLog.Po
 	-rm -f ./$(DEPDIR)/adips.Po
 	-rm -f Makefile

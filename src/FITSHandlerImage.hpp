@@ -20,21 +20,21 @@
 struct FITSHandlerImage {
 public:
 	/* 成员变量 */
-	float* data;				/// 图像数据存储区
 	unsigned wImg, hImg;		/// 图像大小
 	unsigned xStart, yStart;	/// ROI区起始地址: 1
 	unsigned xBin, yBin;		/// ROI区合并因子
 	std::string dateobs;		/// 曝光起始时间, 格式: CCYY-MM-DDThh:mm:ss<.sss<sss>>, UTC
-	double expdur;				/// 曝光时间, 量纲: 秒
+	float expdur;				/// 曝光时间, 量纲: 秒
+	float* data;				/// 图像数据存储区
 
 public:
 	/* 构造与析构函数 */
 	FITSHandlerImage() {
-		data = NULL;
-		wImg = hImg = 0;
+		wImg   = hImg   = 0;
 		xStart = yStart = 1;
-		xBin = yBin = 1;
+		xBin   = yBin   = 1;
 		expdur = 0.0;
+		data   = NULL;
 	}
 
 	virtual ~FITSHandlerImage() {
@@ -76,16 +76,18 @@ public:
 		if (!datefull) sprintf(tmfull, "%sT%s", obsdate, obstime);
 		dateobs = tmfull;
 		// 尝试不同关键字表征的曝光时间
-		fits_read_key(hFits, TDOUBLE, "EXPOSURE",  &expdur, NULL, &state);
+		fits_read_key(hFits, TFLOAT, "EXPOSURE",  &expdur, NULL, &state);
 		if (state) {
 			state = 0;
-			fits_read_key(hFits, TDOUBLE, "EXPTIME",  &expdur, NULL, &state);
+			fits_read_key(hFits, TFLOAT, "EXPTIME",  &expdur, NULL, &state);
 		}
 		if (state) {
 			state = 0;
-			fits_read_key(hFits, TDOUBLE, "EXPDUR",  &expdur, NULL, &state);
+			fits_read_key(hFits, TFLOAT, "EXPDUR",  &expdur, NULL, &state);
 		}
 		dateobs = tmfull;
+		// 尝试加载ROI参数
+
 		// 数据读入内存
 		alloc_buff(w, h);
 		fits_read_img(hFits, TFLOAT, 1, w * h, NULL, data, NULL, &state);

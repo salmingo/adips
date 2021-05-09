@@ -11,8 +11,10 @@
 ADIReduce::ADIReduce(Parameter* param)
 	: ADIProcess(param) {
 	nameFunc_ = "reducing";
-	bkSpacePtr_ = BackStatSpace::Create(param);
-	loadPreproc_= 0;
+	loadPreprocZero_ = 0;
+	loadPreprocDark_ = 0;
+	loadPreprocFlat_ = 0;
+	buffPtr_.reset(new MemoryBuffer(param->backStat.gridWidth, param->backStat.gridHeight));
 }
 
 ADIReduce::~ADIReduce() {
@@ -32,28 +34,30 @@ bool ADIReduce::do_real_process() {
 	frame_->hImg    = fitsImg_.hImg;
 	frame_->expdur  = fitsImg_.expdur;
 	frame_->dateobs = fitsImg_.dateobs;
+
 	/* 预处理 */
 	// 尝试加载预处理图像
-	if (!loadPreproc_) load_preproc_images();
-	if (loadPreproc_ == 1) {// 预处理
-		preprocess_zero();
-		if (param_->preProc.pathDark.size()) preprocess_dark();
-		if (param_->preProc.pathFlat.size()) preprocess_flat();
-	}
-	// 全局背景统计
+	if (!loadPreprocZero_) load_preproc_zero();
+	if (!loadPreprocDark_) load_preproc_dark();
+	if (!loadPreprocFlat_) load_preproc_flat();
+	if (loadPreprocZero_ == 1) preprocess_zero();
+	if (loadPreprocDark_ == 1) preprocess_dark();
+	if (loadPreprocFlat_ == 1) preprocess_flat();
 
-	// 剔除坏像素
-	if (param_->preProc.badPixRemove) bad_pixels_remove();
-	// 统计背景
+	// 背景统计
+	back_stat_global();
 	switch (param_->backStat.mode) {
 	case FILTER_SPACE:
-		//		bkSpacePtr_->ProcImage(fitsImg_.data, frame_);
+		back_stat_grid();
 		break;
 	case FILTER_FREQ_DOMAIN:
 		break;
 	default:
 		break;
 	}
+
+	// 剔除坏像素
+//	if (param_->preProc.badPixRemove) bad_pixels_remove();
 	// 提取信号
 
 	// 目标聚合
@@ -65,28 +69,128 @@ bool ADIReduce::do_real_process() {
 	return true;
 }
 
-void ADIReduce::load_preproc_images() {
-
+/*---------------------------------------------------------------------------*/
+/* 功能: 预处理 */
+void ADIReduce::load_preproc_zero() {
+	if (param_->preProc.pathZero.empty())
+		loadPreprocZero_ = 2;
+	else
+		loadPreprocZero_ = (fitsZero_.LoadImage(param_->preProc.pathZero.c_str()) == 0) ? 1 : 3;
 }
 
-bool ADIReduce::precheck_dimension() {
-	return true;
+void ADIReduce::load_preproc_dark() {
+	if (param_->preProc.pathDark.empty())
+		loadPreprocDark_ = 2;
+	else
+		loadPreprocDark_ = (fitsDark_.LoadImage(param_->preProc.pathDark.c_str()) == 0) ? 1 : 3;
+}
+
+void ADIReduce::load_preproc_flat() {
+	if (param_->preProc.pathFlat.empty())
+		loadPreprocFlat_ = 2;
+	else {
+		loadPreprocFlat_ = (fitsFlat_.LoadImage(param_->preProc.pathFlat.c_str()) == 0) ? 1 : 3;
+		if (loadPreprocFlat_ == 1) {// 归一化平场
+			unsigned wflat = fitsFlat_.wImg;
+			unsigned hflat = fitsFlat_.hImg;
+			unsigned pixels = wflat * hflat;
+			float* flat = fitsFlat_.data;
+			double mean(0.0), recip;
+			for (unsigned i = 0; i < pixels; ++i) mean += flat[i];
+			mean /= double(pixels);
+			recip = 1.0 / mean; // 均值倒数
+			for (unsigned i = 0; i < pixels; ++i, ++flat) *flat = float(*flat * recip);
+
+			_gLog.Write("FLAT image scaled");
+		}
+	}
 }
 
 void ADIReduce::preprocess_zero() {
+	// v1: 全帧图像, 不考虑ROI及BINNING
+	unsigned wimg = fitsImg_.wImg;
+	unsigned himg = fitsImg_.hImg;
+	unsigned wzero = fitsZero_.wImg;
+	unsigned hzero = fitsZero_.hImg;
 
+	if (wimg != wzero || himg != hzero)
+		_gLog.Write(LOG_WARN, "image dimension[%u, %u] does not match zero image[%u, %u]",
+				wimg, himg, wzero, hzero);
+	else {
+		unsigned pixels = wimg * himg;
+		float* img  = fitsImg_.data;
+		float* zero = fitsZero_.data;
+		for (unsigned i = 0; i < pixels; ++i, ++img, ++zero) *img -= *zero;
+	}
 }
 
 void ADIReduce::preprocess_dark() {
+	// v1: 全帧图像, 不考虑ROI及BINNING
+	unsigned wimg = fitsImg_.wImg;
+	unsigned himg = fitsImg_.hImg;
+	unsigned wdark = fitsDark_.wImg;
+	unsigned hdark = fitsDark_.hImg;
 
+	if (wimg != wdark || himg != hdark)
+		_gLog.Write(LOG_WARN, "image dimension[%u, %u] does not match dark image[%u, %u]",
+				wimg, himg, wdark, hdark);
+	else {
+		unsigned pixels = wimg * himg;
+		float* img  = fitsImg_.data;
+		float* dark = fitsDark_.data;
+		float t = fitsImg_.expdur;
+		for (unsigned i = 0; i < pixels; ++i, ++img, ++dark) *img -= (*dark * t);
+	}
 }
 
 void ADIReduce::preprocess_flat() {
+	// v1: 全帧图像, 不考虑ROI及BINNING
+	unsigned wimg = fitsImg_.wImg;
+	unsigned himg = fitsImg_.hImg;
+	unsigned wflat = fitsFlat_.wImg;
+	unsigned hflat = fitsFlat_.hImg;
 
+	if (wimg != wflat || himg != hflat)
+		_gLog.Write(LOG_WARN, "image dimension[%u, %u] does not match flat image[%u, %u]",
+				wimg, himg, wflat, hflat);
+	else {
+		unsigned pixels = wimg * himg;
+		float* img  = fitsImg_.data;
+		float* flat = fitsFlat_.data;
+
+		for (unsigned i = 0; i < pixels; ++i, ++img, ++flat) *img /= *flat;
+	}
 }
 
 /*---------------------------------------------------------------------------*/
-/* 接口: 坏像素 */
+/* 功能: 统计背景 */
+void ADIReduce::back_stat_global() {
+	unsigned wimg = fitsImg_.wImg;
+	unsigned himg = fitsImg_.hImg;
+	unsigned pixels = wimg * himg;
+	float* img = fitsImg_.data;
+	double mean(0.0), sig(0.0);
+
+	for (unsigned i = 0; i < pixels; ++i, ++img) {
+		mean += *img;
+		sig  += *img * *img;
+	}
+	sig = (sig - mean * mean / pixels) / pixels;
+	mean /= pixels;
+	sig = sig > 0.0 ? sqrt(sig) : 0.0;
+	frame_->bkMean  = mean;
+	frame_->bkSigma = sig;
+
+	_gLog.Write("background statistics. mean = %.1f, stdev = %.2f", mean, sig);
+}
+
+void ADIReduce::back_stat_grid() {
+	// 备份原始数据, 并分配临时缓冲区
+	buffPtr_->CopyData(fitsImg_.data, fitsImg_.wImg, fitsImg_.hImg);
+}
+
+/*---------------------------------------------------------------------------*/
+/* 功能: 坏像素 */
 void ADIReduce::bad_pixels_remove() {
 	_gLog.Write("removing hot and dark pixels");
 	// 备份原始数据. 之后原始数据区存储处理结果, 备份区作为原始输入
