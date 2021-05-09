@@ -46,18 +46,12 @@ bool ADIReduce::do_real_process() {
 
 	// 背景统计
 	back_stat_global();
-	switch (param_->backStat.mode) {
-	case FILTER_SPACE:
-		back_stat_grid();
-		break;
-	case FILTER_FREQ_DOMAIN:
-		break;
-	default:
-		break;
-	}
+	if      (param_->backStat.mode == FILTER_SPACE)       back_stat_grid();
+	else if (param_->backStat.mode == FILTER_FREQ_DOMAIN) {}
 
 	// 剔除坏像素
-//	if (param_->preProc.badPixRemove) bad_pixels_remove();
+	if (param_->preProc.badPixRemove) bad_pixels_remove();
+
 	// 提取信号
 
 	// 目标聚合
@@ -196,7 +190,7 @@ void ADIReduce::bad_pixels_remove() {
 	// 备份原始数据. 之后原始数据区存储处理结果, 备份区作为原始输入
 	unsigned w = fitsImg_.wImg;
 	unsigned h = fitsImg_.hImg;
-	imgBackup_.CopyData(fitsImg_.data, w, h);
+	buffPtr_->CopyData(fitsImg_.data, w, h);
 	/**
 	 * 剔除坏像素. 坏像素判据:
 	 * - 使用3*3邻近窗口作为邻近区
@@ -204,7 +198,7 @@ void ADIReduce::bad_pixels_remove() {
 	 * - 像素值小于任一邻近值             ==> 暗点
 	 */
 	float *bufDst = fitsImg_.data;
-	float *bufSrc = imgBackup_.buff;
+	float *bufSrc = buffPtr_->backup;
 	char *badMarked = new char[w * h];
 	unsigned x1(1), y1(1), x2(w - 1), y2(h - 1); // 检测区域
 	unsigned x, y;

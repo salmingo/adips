@@ -18,52 +18,6 @@ public:
 
 protected:
 	/*!
-	 * @brief 图像帧大小数据缓存区
-	 */
-	struct ImageBuffer {
-		unsigned width, height;
-		float* buff;
-
-	protected:
-		unsigned pixOld;
-
-	protected:
-		bool resize(unsigned w, unsigned h) {
-			unsigned pixNew = w * h;
-			if (pixNew != pixOld && buff) {
-				delete []buff;
-				buff = NULL;
-			}
-			if (!buff) {
-				buff   = new float[pixNew];
-				pixOld = pixNew;
-			}
-			width  = w;
-			height = h;
-			return buff != NULL;
-		}
-
-	public:
-		ImageBuffer() {
-			width = height = 0;
-			pixOld = 0;
-			buff = NULL;
-		}
-
-		virtual ~ImageBuffer() {
-			if (buff) delete []buff;
-		}
-
-		bool CopyData(float* data, unsigned w, unsigned h) {
-			if (resize(w, h)) {
-				memcpy(buff, data, w * h * sizeof(float));
-				return true;
-			}
-			return false;
-		}
-	};
-
-	/*!
 	 * @struct MemoryBuffer 用于图像处理的内存缓冲区管理接口
 	 */
 	struct MemoryBuffer {
@@ -144,7 +98,6 @@ protected:
 	FITSHandlerImage fitsFlat_;	/// 平场图像文件接口
 	FITSHandlerImage fitsImg_;	/// FITS图像文件访问接口
 	MembuffPtr buffPtr_;		/// 数据处理内存缓冲区
-	ImageBuffer imgBackup_;		/// 图像帧数据备份
 
 protected:
 	/* 功能: 数据处理流程 */
