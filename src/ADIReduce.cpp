@@ -162,15 +162,20 @@ void ADIReduce::back_stat_global() {
 	unsigned wimg = fitsImg_.wImg;
 	unsigned himg = fitsImg_.hImg;
 	unsigned pixels = wimg * himg;
+	unsigned offset, count;
+	double step(pixels * 5E-3), x;
 	float* img = fitsImg_.data;
 	double mean(0.0), sig(0.0);
 
-	for (unsigned i = 0; i < pixels; ++i, ++img) {
-		mean += *img;
-		sig  += *img * *img;
+	for (x = step * 0.5, count = 0; ; x += step) {
+		if ((offset = unsigned(x)) >= pixels) break;
+		mean += img[offset];
+		sig  += img[offset] * img[offset];
+		++count;
 	}
-	sig = (sig - mean * mean / pixels) / pixels;
-	mean /= pixels;
+
+	sig = (sig - mean * mean / count) / count;
+	mean /= count;
 	sig = sig > 0.0 ? sqrt(sig) : 0.0;
 	frame_->bkMean  = mean;
 	frame_->bkSigma = sig;
@@ -179,8 +184,20 @@ void ADIReduce::back_stat_global() {
 }
 
 void ADIReduce::back_stat_grid() {
+	unsigned wImg = fitsImg_.wImg;
+	unsigned hImg = fitsImg_.hImg;
 	// 备份原始数据, 并分配临时缓冲区
-	buffPtr_->CopyData(fitsImg_.data, fitsImg_.wImg, fitsImg_.hImg);
+	buffPtr_->CopyData(fitsImg_.data, wImg, hImg);
+
+	// 按照网格遍历图像帧
+	unsigned wGrid(param_->backStat.gridWidth);
+	unsigned hGrid(param_->backStat.gridHeight);
+	unsigned ix, iy, ik;
+	for (iy = 0, ik = 0; iy < hImg; iy += hGrid) {
+		for (ix = 0; ix < wImg; ix += wGrid, ++ik) {
+
+		}
+	}
 }
 
 /*---------------------------------------------------------------------------*/
@@ -252,7 +269,7 @@ bool ADIReduce::bad_pixel_whether(float* data, unsigned w, unsigned x, unsigned 
 	if (sig <= 0.0) return false;
 	sig = sqrt(sig);
 	t = float((val - mean) / sig);
-	if ((n > 0 && t < 10.0) || (n < 0 && t > -10.0)) return false;
+	if ((n > 0 && t < 30.0) || (n < 0 && t > -30.0)) return false;
 	pixv = mean;
 
 	_gLog.Write("%s: (%4u, %4u), sigma = %.1f, SNR = %.1f, %.0f ==> %.0f", n > 0 ? "Hot " : "Dark",

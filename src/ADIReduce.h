@@ -18,14 +18,32 @@ public:
 
 protected:
 	/*!
+	 * @struct BackGrid 网格节点统计结果
+	 */
+	struct BackGrid {
+		float mean;		/// 均值
+		float sig;		/// 噪声
+		float scale;	/// 比例尺
+		float zero;		/// 零点
+
+	public:
+		BackGrid() {
+			mean = sig = -1E30;
+			scale = zero = 0.0;
+		}
+	};
+
+	/*!
 	 * @struct MemoryBuffer 用于图像处理的内存缓冲区管理接口
 	 */
 	struct MemoryBuffer {
 		unsigned wImg, hImg;	/// 图像帧像素数
 		unsigned nbkx, nbky;	/// XY方向背景网格数量
 		float* backup;		/// 原始数据备份
-		float* bkmean;		/// 背景网格均值
-		float* bksig;		/// 背景网格噪声
+		float* mean;		/// 背景网格均值
+		float* sig;			/// 背景网格噪声
+		float* d2mean;		/// 均值二阶微分
+		float* d2sig;		/// 噪声二阶微分
 
 	protected:
 		unsigned bkw, bkh;	/// 背景网格宽度和高度
@@ -37,13 +55,16 @@ protected:
 			wImg = hImg = 0;
 			nbkx = nbky = 0;
 			backup = NULL;
-			bkmean = bksig = NULL;
+			mean = sig = NULL;
+			d2mean = d2sig = NULL;
 		}
 
 		virtual ~MemoryBuffer() {
 			if (backup) delete []backup;
-			if (bkmean) delete []bkmean;
-			if (bksig)  delete []bksig;
+			if (mean)   delete []mean;
+			if (sig)    delete []sig;
+			if (d2mean) delete []d2mean;
+			if (d2sig)  delete []d2sig;
 		}
 
 		bool CopyData(float* data, unsigned wNew, unsigned hNew) {
@@ -70,14 +91,18 @@ protected:
 			nbky = (hNew - 1) / bkh + 1;
 			pixNew = nbkx * nbky;
 			if (pixOld != pixNew) {
-				if (bkmean) delete[] bkmean;
-				if (bksig)  delete[] bksig;
-				bkmean = bksig = NULL;
+				if (mean)   delete[] mean;
+				if (sig)    delete[] sig;
+				if (d2mean) delete[] d2mean;
+				if (d2sig)  delete[] d2sig;
+				mean = sig = d2mean = d2sig = NULL;
 			}
-			if (!bkmean) bkmean = new float[pixNew];
-			if (!bksig)  bksig  = new float[pixNew];
+			if (!mean)   mean   = new float[pixNew];
+			if (!sig)    sig    = new float[pixNew];
+			if (!d2mean) d2mean = new float[pixNew];
+			if (!d2sig)  d2sig  = new float[pixNew];
 
-			return (backup != NULL && bkmean != NULL && bksig != NULL);
+			return (backup != NULL && mean != NULL && sig != NULL);
 		}
 	};
 	using MembuffPtr = boost::shared_ptr<MemoryBuffer>;
