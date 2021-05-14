@@ -21,6 +21,7 @@ protected:
 	 * @struct BackGrid 网格节点统计结果
 	 */
 	struct BackGrid {
+		int levels;		/// 直方图能级数量
 		float mean;		/// 均值
 		float sig;		/// 噪声
 		float scale;	/// 比例尺
@@ -28,6 +29,7 @@ protected:
 
 	public:
 		BackGrid() {
+			levels = 0;
 			mean = sig = -1E30;
 			scale = zero = 0.0;
 		}
@@ -168,6 +170,16 @@ protected:
 	 * @brief 在空域完成背景统计...
 	 */
 	void back_stat_grid();
+	/*!
+	 * @brief 统计单个网格
+	 * @param xstart 在原始数据中的X轴起始地址
+	 * @param ystart 在原始数据中的Y轴起始地址
+	 * @param grid   统计结果
+	 * @return
+	 * 网格符合统计规律
+	 */
+	bool back_grid_stat(unsigned xstart, unsigned ystart, BackGrid& grid);
+	void back_grid_histo();
 
 protected:
 	/* 功能: 坏像素 */

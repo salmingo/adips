@@ -8,6 +8,8 @@
 #include "ADIReduce.h"
 #include "GLog.h"
 
+#define BIG		1E30
+
 ADIReduce::ADIReduce(Parameter* param)
 	: ADIProcess(param) {
 	nameFunc_ = "reducing";
@@ -94,8 +96,6 @@ void ADIReduce::load_preproc_flat() {
 			mean /= double(pixels);
 			recip = 1.0 / mean; // 均值倒数
 			for (unsigned i = 0; i < pixels; ++i, ++flat) *flat = float(*flat * recip);
-
-			_gLog.Write("FLAT image scaled");
 		}
 	}
 }
@@ -193,11 +193,66 @@ void ADIReduce::back_stat_grid() {
 	unsigned wGrid(param_->backStat.gridWidth);
 	unsigned hGrid(param_->backStat.gridHeight);
 	unsigned ix, iy, ik;
-	for (iy = 0, ik = 0; iy < hImg; iy += hGrid) {
-		for (ix = 0; ix < wImg; ix += wGrid, ++ik) {
+	BackGrid grid;
+	float *mean = buffPtr_->mean;
+	float *sig  = buffPtr_->sig;
 
+	for (iy = 0, ik = 0; iy < hImg; iy += hGrid) {
+		for (ix = 0; ix < wImg; ix += wGrid, ++ik, ++mean, ++sig) {
+			if (back_grid_stat(ix, iy, grid)) {
+
+			}
+			else {
+				*mean = -BIG;
+				*sig  = -BIG;
+			}
 		}
 	}
+}
+
+bool ADIReduce::back_grid_stat(unsigned xstart, unsigned ystart, BackGrid& grid) {
+	unsigned wImg = fitsImg_.wImg;
+	unsigned hImg = fitsImg_.hImg;
+	unsigned xstop = xstart + param_->backStat.gridWidth;
+	unsigned ystop = ystart + param_->backStat.gridHeight;
+	unsigned x, y;
+	double mean(0.0), sig(0.0);
+	float* dptr = fitsImg_.data + ystart * wImg;
+	float t, lcut, hcut;
+	int npix;
+
+	if (xstop > wImg) xstop = wImg;
+	if (ystop > hImg) ystop = hImg;
+	npix = (xstop - xstart) * (ystop - ystart);
+	for (y = ystart; y < ystop; ++y, dptr += wImg) {
+		for (x = xstart; x < xstop; ++x) {
+			mean += (t = dptr[x]);
+			sig  += (t * t);
+		}
+	}
+	mean /= npix;
+	sig = sig / npix - mean * mean;
+	if (sig <= 0.0) return false;
+	sig = sqrt(sig);
+	lcut = float(mean - 2.0 * sig);
+	hcut = float(mean + 2.0 * sig);
+
+	mean = sig = 0.0;
+	npix = 0;
+	dptr = fitsImg_.data + ystart * wImg;
+	for (y = ystart; y < ystop; ++y, dptr += wImg) {
+		for (x = xstart; x < xstop; ++x) {
+			++npix;
+			mean += (t = dptr[x]);
+			sig  += (t * t);
+		}
+	}
+	mean /= npix;
+	sig = sig / npix - mean * mean;
+	if (sig <= 0.0) return false;
+	sig = sqrt(sig);
+
+	return true;
 }
 
 /*---------------------------------------------------------------------------*/
