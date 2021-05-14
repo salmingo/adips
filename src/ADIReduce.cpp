@@ -8,7 +8,8 @@
 #include "ADIReduce.h"
 #include "GLog.h"
 
-#define BIG		1E30
+#define BIG			1E30	/// 使用大数作为无效值
+#define MAXLEVELS	4096	/// 直方图能级最大数量
 
 ADIReduce::ADIReduce(Parameter* param)
 	: ADIProcess(param) {
@@ -17,6 +18,7 @@ ADIReduce::ADIReduce(Parameter* param)
 	loadPreprocDark_ = 0;
 	loadPreprocFlat_ = 0;
 	buffPtr_.reset(new MemoryBuffer(param->backStat.gridWidth, param->backStat.gridHeight));
+	histo_.reset(new int[MAXLEVELS]);
 }
 
 ADIReduce::~ADIReduce() {
@@ -159,28 +161,16 @@ void ADIReduce::preprocess_flat() {
 /*---------------------------------------------------------------------------*/
 /* 功能: 统计背景 */
 void ADIReduce::back_stat_global() {
-	unsigned wimg = fitsImg_.wImg;
-	unsigned himg = fitsImg_.hImg;
-	unsigned pixels = wimg * himg;
-	unsigned offset, count;
-	double step(pixels * 5E-3), x;
-	float* img = fitsImg_.data;
-	double mean(0.0), sig(0.0);
-
-	for (x = step * 0.5, count = 0; ; x += step) {
-		if ((offset = unsigned(x)) >= pixels) break;
-		mean += img[offset];
-		sig  += img[offset] * img[offset];
-		++count;
+	BackGrid grid;
+	if (back_grid_stat(0, 0, fitsImg_.wImg, fitsImg_.hImg, grid)) {
+		back_grid_histo(0, 0, fitsImg_.wImg, fitsImg_.hImg, grid);
+		back_grid_guess(grid);
 	}
+	frame_->bkMean = grid.mean;
+	frame_->bkSigma= grid.sig;
 
-	sig = (sig - mean * mean / count) / count;
-	mean /= count;
-	sig = sig > 0.0 ? sqrt(sig) : 0.0;
-	frame_->bkMean  = mean;
-	frame_->bkSigma = sig;
-
-	_gLog.Write("background statistics. mean = %.1f, stdev = %.2f", mean, sig);
+	_gLog.Write("global background statistics. mean = %.1f, stdev = %.2f",
+			grid.mean, grid.sig);
 }
 
 void ADIReduce::back_stat_grid() {
@@ -189,7 +179,7 @@ void ADIReduce::back_stat_grid() {
 	// 备份原始数据, 并分配临时缓冲区
 	buffPtr_->CopyData(fitsImg_.data, wImg, hImg);
 
-	// 按照网格遍历图像帧
+	// 按照网格遍历图像帧, 生成网格统计结果
 	unsigned wGrid(param_->backStat.gridWidth);
 	unsigned hGrid(param_->backStat.gridHeight);
 	unsigned ix, iy, ik;
@@ -199,8 +189,9 @@ void ADIReduce::back_stat_grid() {
 
 	for (iy = 0, ik = 0; iy < hImg; iy += hGrid) {
 		for (ix = 0; ix < wImg; ix += wGrid, ++ik, ++mean, ++sig) {
-			if (back_grid_stat(ix, iy, grid)) {
-
+			if (back_grid_stat(ix, iy, wGrid, hGrid, grid)) {
+				back_grid_histo(ix, iy, wGrid, hGrid, grid);
+				back_grid_guess(grid);
 			}
 			else {
 				*mean = -BIG;
@@ -208,51 +199,74 @@ void ADIReduce::back_stat_grid() {
 			}
 		}
 	}
+	back_grid_filter();
+	// 生成网格二阶导数, 用于样条插值
 }
 
-bool ADIReduce::back_grid_stat(unsigned xstart, unsigned ystart, BackGrid& grid) {
+bool ADIReduce::back_grid_stat(unsigned xstart, unsigned ystart, unsigned width, unsigned height, BackGrid& grid) {
 	unsigned wImg = fitsImg_.wImg;
 	unsigned hImg = fitsImg_.hImg;
-	unsigned xstop = xstart + param_->backStat.gridWidth;
-	unsigned ystop = ystart + param_->backStat.gridHeight;
+	unsigned xstop = xstart + width;
+	unsigned ystop = ystart + height;
 	unsigned x, y;
 	double mean(0.0), sig(0.0);
 	float* dptr = fitsImg_.data + ystart * wImg;
 	float t, lcut, hcut;
-	int npix;
+	int n0, n1;
 
 	if (xstop > wImg) xstop = wImg;
 	if (ystop > hImg) ystop = hImg;
-	npix = (xstop - xstart) * (ystop - ystart);
+	n0 = (xstop - xstart) * (ystop - ystart);
 	for (y = ystart; y < ystop; ++y, dptr += wImg) {
 		for (x = xstart; x < xstop; ++x) {
 			mean += (t = dptr[x]);
 			sig  += (t * t);
 		}
 	}
-	mean /= npix;
-	sig = sig / npix - mean * mean;
-	if (sig <= 0.0) return false;
+	mean /= n0;
+	sig = sig / n0 - mean * mean;
+	if (sig <= 0.0) {
+		grid.mean = float(mean);
+		grid.sig  = 0.0;
+		return false;
+	}
 	sig = sqrt(sig);
 	lcut = float(mean - 2.0 * sig);
 	hcut = float(mean + 2.0 * sig);
 
-	mean = sig = 0.0;
-	npix = 0;
 	dptr = fitsImg_.data + ystart * wImg;
-	for (y = ystart; y < ystop; ++y, dptr += wImg) {
+	mean = sig = 0.0;
+	for (y = ystart, n1 = 0; y < ystop; ++y, dptr += wImg) {
 		for (x = xstart; x < xstop; ++x) {
-			++npix;
-			mean += (t = dptr[x]);
-			sig  += (t * t);
+			if ((t = dptr[x]) >= lcut && t <= hcut) {
+				++n1;
+				mean += t;
+				sig  += (t * t);
+			}
 		}
 	}
-	mean /= npix;
-	sig = sig / npix - mean * mean;
-	if (sig <= 0.0) return false;
+	mean /= n1;
+	sig = sig / n1 - mean * mean;
+	if (sig <= 0.0) {
+		grid.mean = float(mean);
+		grid.sig  = 0.0;
+		return false;
+	}
 	sig = sqrt(sig);
 
 	return true;
+}
+
+void ADIReduce::back_grid_histo(unsigned xstart, unsigned ystart, unsigned width, unsigned height, BackGrid& grid) {
+
+}
+
+void ADIReduce::back_grid_guess(BackGrid& grid) {
+
+}
+
+void ADIReduce::back_grid_filter() {
+
 }
 
 /*---------------------------------------------------------------------------*/

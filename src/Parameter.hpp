@@ -39,10 +39,10 @@ struct ParamPreProcess {
 struct ParamBackground {
 	bool useGlobal;		/// 使用全局背景
 	int mode;			/// 背景滤波算法. 1: 空域滤波; 2: 频域滤波
-	int gridWidth;		/// 背景网格宽度
-	int gridHeight;		/// 背景网格高度
-	int filterX;		/// 背景X方向滤波宽度
-	int filterY;		/// 背景Y方向滤波高度
+	unsigned gridWidth;	/// 背景网格宽度
+	unsigned gridHeight;/// 背景网格高度
+	unsigned filterX;	/// 背景X方向滤波宽度
+	unsigned filterY;	/// 背景Y方向滤波高度
 };
 
 struct ParamExtractSignal {
@@ -52,8 +52,8 @@ struct ParamExtractSignal {
 
 // 目标测量参数
 struct ParamMeasureBlob {
-	int pixMin;		/// 构成目标的最小像素数
-	int pixMax;		/// 构成目标的最大像素数. 0: 无限制
+	unsigned pixMin;	/// 构成目标的最小像素数
+	unsigned pixMax;	/// 构成目标的最大像素数. 0: 无限制
 };
 
 struct ParamOutput {
@@ -63,9 +63,9 @@ struct ParamOutput {
 };
 
 struct ParamCorrectClock {
-	bool correct;		/// 使用时间修正
-	int msPreClean;		/// 收到曝光指令后的芯片清空时间, 量纲: 毫秒
-	int msLinesShift;	/// 图像行转移时间, 量纲： 毫秒
+	bool correct;			/// 使用时间修正
+	unsigned msPreClean;	/// 收到曝光指令后的芯片清空时间, 量纲: 毫秒
+	unsigned msLinesShift;	/// 图像行转移时间, 量纲： 毫秒
 };
 
 struct Parameter {
@@ -173,17 +173,22 @@ public:
 					backStat.gridHeight  = child.second.get("Grid.<xmlattr>.Height",       32);
 					backStat.filterX     = child.second.get("Filter.<xmlattr>.X",          3);
 					backStat.filterY     = child.second.get("Filter.<xmlattr>.Y",          3);
+
+					if (backStat.gridWidth < 16)   backStat.gridWidth = 16;
+					if (backStat.gridHeight < 16)  backStat.gridHeight = 16;
+					if (backStat.filterX < 1)      backStat.filterX = 1;
+					if (backStat.filterY < 1)      backStat.filterY = 1;
 				}
 				else if (boost::iequals(child.first, "ResolveSignal")) {
 					sigExtract.modeFilter = child.second.get("Filter.<xmlattr>.Mode",     0);
 					sigExtract.sigMin     = child.second.get("SNR.<xmlattr>.Minimum",     1.5);
+					if (sigExtract.sigMin < 1.0) sigExtract.sigMin = 1.0;
 				}
 				else if (boost::iequals(child.first, "BlobMesurement")) {
 					blobMeasure.pixMin = child.second.get("PixelNumber.<xmlattr>.Minimum",  1);
 					blobMeasure.pixMax = child.second.get("PixelNumber.<xmlattr>.Maximum",  0);
 
-					if (blobMeasure.pixMin <= 0) blobMeasure.pixMin = 1;
-					if (blobMeasure.pixMax <= 0) blobMeasure.pixMax = 0;
+					if (blobMeasure.pixMin == 0) blobMeasure.pixMin = 1;
 				}
 				else if (boost::iequals(child.first, "Output")) {
 					output.rsltFinal = child.second.get("Result.<xmlattr>.Final",         false);
