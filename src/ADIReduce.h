@@ -8,6 +8,7 @@
 #define ADIREDUCE_H_
 
 #include <string.h>
+#include <boost/smart_ptr/shared_array.hpp>
 #include "ADIProcess.h"
 #include "FITSHandlerImage.hpp"
 
@@ -108,6 +109,7 @@ protected:
 		}
 	};
 	using MembuffPtr = boost::shared_ptr<MemoryBuffer>;
+	using IntArray   = boost::shared_array<int>;
 
 protected:
 	/*!
@@ -125,6 +127,7 @@ protected:
 	FITSHandlerImage fitsFlat_;	/// 平场图像文件接口
 	FITSHandlerImage fitsImg_;	/// FITS图像文件访问接口
 	MembuffPtr buffPtr_;		/// 数据处理内存缓冲区
+	IntArray histo_;			/// 直方图
 
 protected:
 	/* 功能: 数据处理流程 */
@@ -172,14 +175,27 @@ protected:
 	void back_stat_grid();
 	/*!
 	 * @brief 统计单个网格
-	 * @param xstart 在原始数据中的X轴起始地址
-	 * @param ystart 在原始数据中的Y轴起始地址
-	 * @param grid   统计结果
+	 * @param xstart  在原始数据中的X轴起始地址
+	 * @param ystart  在原始数据中的Y轴起始地址
+	 * @param width   宽度
+	 * @param hheight 高度
+	 * @param grid    统计结果
 	 * @return
 	 * 网格符合统计规律
 	 */
-	bool back_grid_stat(unsigned xstart, unsigned ystart, BackGrid& grid);
-	void back_grid_histo();
+	bool back_grid_stat(unsigned xstart, unsigned ystart, unsigned width, unsigned height, BackGrid& grid);
+	/*!
+	 * @brief 统计单个网格直方图
+	 */
+	void back_grid_histo(unsigned xstart, unsigned ystart, unsigned width, unsigned height, BackGrid& grid);
+	/*!
+	 * @brief 依据直方图计算网格统计结果
+	 */
+	void back_grid_guess(BackGrid& grid);
+	/*!
+	 * @brief 对背景网格做滤波, 修复错误网格
+	 */
+	void back_grid_filter();
 
 protected:
 	/* 功能: 坏像素 */
