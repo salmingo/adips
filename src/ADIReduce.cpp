@@ -87,8 +87,8 @@ void ADIReduce::load_preproc_flat() {
 	else {
 		loadPreprocFlat_ = (fitsFlat_.LoadImage(param_->preProc.pathFlat.c_str()) == 0) ? 1 : 3;
 		if (loadPreprocFlat_ == 1) {// 归一化平场
-			unsigned wflat = fitsFlat_.wImg;
-			unsigned hflat = fitsFlat_.hImg;
+			unsigned wflat  = fitsFlat_.wImg;
+			unsigned hflat  = fitsFlat_.hImg;
 			unsigned pixels = wflat * hflat;
 			float* flat = fitsFlat_.data;
 			double mean(0.0), recip;
@@ -102,8 +102,8 @@ void ADIReduce::load_preproc_flat() {
 
 void ADIReduce::preprocess_zero() {
 	// v1: 全帧图像, 不考虑ROI及BINNING
-	unsigned wimg = fitsImg_.wImg;
-	unsigned himg = fitsImg_.hImg;
+	unsigned wimg  = fitsImg_.wImg;
+	unsigned himg  = fitsImg_.hImg;
 	unsigned wzero = fitsZero_.wImg;
 	unsigned hzero = fitsZero_.hImg;
 
