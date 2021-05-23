@@ -122,8 +122,8 @@ void ADIReduce::preprocess_zero() {
 
 void ADIReduce::preprocess_dark() {
 	// v1: 全帧图像, 不考虑ROI及BINNING
-	unsigned wimg = fitsImg_.wImg;
-	unsigned himg = fitsImg_.hImg;
+	unsigned wimg  = fitsImg_.wImg;
+	unsigned himg  = fitsImg_.hImg;
 	unsigned wdark = fitsDark_.wImg;
 	unsigned hdark = fitsDark_.hImg;
 
@@ -141,8 +141,8 @@ void ADIReduce::preprocess_dark() {
 
 void ADIReduce::preprocess_flat() {
 	// v1: 全帧图像, 不考虑ROI及BINNING
-	unsigned wimg = fitsImg_.wImg;
-	unsigned himg = fitsImg_.hImg;
+	unsigned wimg  = fitsImg_.wImg;
+	unsigned himg  = fitsImg_.hImg;
 	unsigned wflat = fitsFlat_.wImg;
 	unsigned hflat = fitsFlat_.hImg;
 
@@ -162,7 +162,7 @@ void ADIReduce::preprocess_flat() {
 /* 功能: 统计背景 */
 void ADIReduce::back_stat_global() {
 	BackGrid grid;
-	if (back_grid_stat(0, 0, fitsImg_.wImg, fitsImg_.hImg, grid)) {
+	if (back_grid_stat (0, 0, fitsImg_.wImg, fitsImg_.hImg, grid)) {
 		back_grid_histo(0, 0, fitsImg_.wImg, fitsImg_.hImg, grid);
 		back_grid_guess(grid);
 	}
@@ -189,7 +189,7 @@ void ADIReduce::back_stat_grid() {
 
 	for (iy = 0, ik = 0; iy < hImg; iy += hGrid) {
 		for (ix = 0; ix < wImg; ix += wGrid, ++ik, ++mean, ++sig) {
-			if (back_grid_stat(ix, iy, wGrid, hGrid, grid)) {
+			if (back_grid_stat (ix, iy, wGrid, hGrid, grid)) {
 				back_grid_histo(ix, iy, wGrid, hGrid, grid);
 				back_grid_guess(grid);
 			}
@@ -204,8 +204,8 @@ void ADIReduce::back_stat_grid() {
 }
 
 bool ADIReduce::back_grid_stat(unsigned xstart, unsigned ystart, unsigned width, unsigned height, BackGrid& grid) {
-	unsigned wImg = fitsImg_.wImg;
-	unsigned hImg = fitsImg_.hImg;
+	unsigned wImg  = fitsImg_.wImg;
+	unsigned hImg  = fitsImg_.hImg;
 	unsigned xstop = xstart + width;
 	unsigned ystop = ystart + height;
 	unsigned x, y;
@@ -283,8 +283,8 @@ void ADIReduce::bad_pixels_remove() {
 	 * - 像素值大于任一邻近值的k倍. k==3   ==> 热点
 	 * - 像素值小于任一邻近值             ==> 暗点
 	 */
-	float *bufDst = fitsImg_.data;
-	float *bufSrc = buffPtr_->backup;
+	float *bufDst   = fitsImg_.data;
+	float *bufSrc   = buffPtr_->backup;
 	char *badMarked = new char[w * h];
 	unsigned x1(1), y1(1), x2(w - 1), y2(h - 1); // 检测区域
 	unsigned x, y;
